@@ -31,14 +31,14 @@ sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage"
 ping 8.8.8.8 | gawk '{ gsub(/time=/,"",$(NF-1)); print $(NF-1); fflush(); }' | ttyplot -t "ping to 8.8.8.8" -u ms
 ```
 
-### local network throughput for all interfaces (in/out combined)
+### local network throughput for all interfaces from sar
 ```
-sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print tot; tot=0; fflush(); } tot=tot+$6+$7 }' | ttyplot -u  "kB/s"
+sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -u "MB/s"
 ```
 
 ### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg) and two line plot
 ```
-ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk '{ print $5,$8; fflush(); } | ttyplot -2 -u Mb/s
+ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); } | ttyplot -2 -u Mb/s
 ```
 
 ### snmp network throughput for an interface using snmpdelta with two line plot
