@@ -61,15 +61,21 @@ snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.
 { while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
 ```
 
+### CPU temperature
+```
+{ while true; do gawk '{ printf("%.1f\n", $1/1000); fflush(); }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
+```
+
 ### bitcoin price chart
 ```
 { while true; do curl -sL https://coinbase.com/api/v1/prices/historical | head -1 | cut -d, -f2 ; sleep 600; done } | ttyplot -t "bitcoin price" -u usd
 ```
 
-### CPU temperature
+### stock quote chart
 ```
-{ while true; do gawk '{ printf("%.1f\n", $1/1000); fflush(); }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
+{ while true; do curl -s https://api.iextrading.com/1.0/stock/googl/price | gawk '{ print $1; fflush(); }'; sleep 600; done } | ttyplot -t "google stock price" -u usd
 ```
+
 
 rate calculator for counters 
 ============================
