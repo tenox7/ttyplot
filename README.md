@@ -7,6 +7,12 @@ supports rate calculation for counters and up to two plos on a single display us
 
 ![ttyplot ping](ttyplot-ping.png)
 
+
+
+![ttyplot snmp](ttyplot-snmp.png)
+
+
+
 usage examples
 ==============
 
