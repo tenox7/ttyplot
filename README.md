@@ -5,23 +5,7 @@ a simple general purpose plotting utility for tty with data input from stdin
 takes data from stdin, most commonly unix pipeline and plots in text mode on a terminal or console,
 supports rate calculation for counters and up to two plos on a single display using reverse video for second line
 
-```
-                                         ping to 8.8.8.8
-   ^ 23 ms
-   |                                                 #
-   |                                                 #
-   | 17 ms                                           #
-   |                                                 #
-   |                   #     #    #                  #
-   | 12 ms             #     #    #                  #
-   |                   #     #    #                  #
-   |  ## ## ##  #     ##     ##   #  #  # #    #  #  #       # # ##  #   #   #  # # #      #
-   |#6 ms###################################################################################
-   |########################################################################################
-   |########################################################################################
-   +--------------------------------------------------------------------------------------->
-    last=9 min=8 max=23 avg=9 ms
-```
+![ttyplot ping](ttyplot-ping.png)
 
 usage examples
 ==============
