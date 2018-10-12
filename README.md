@@ -51,6 +51,11 @@ snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.
 { while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
 ```
 
+### Disk Throughput from iostat 
+```
+iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
+```
+
 ### CPU temperature
 ```
 { while true; do gawk '{ printf("%.1f\n", $1/1000); fflush(); }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
@@ -75,9 +80,9 @@ rate calculator for counters
 { while true; do snmpget  -v 2c -c public  10.23.73.254  1.3.6.1.2.1.2.2.1.10.9 1.3.6.1.2.1.2.2.1.16.9 | gawk '{ print $NF/1000/1000; fflush(); }'; sleep 10; done } | ttyplot -2 -r -u "MB/s"
 ```
 
-### prometheus node exporter disk write MB/s for sda device
+### prometheus node exporter disk throughput for sda device using two lines 
 ```
-{ while true; do curl -s http://10.11.0.173:9100/metrics | gawk '/^node_disk_written_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); fflush(); }'; sleep 1; done } | ttyplot -r -u MB/s -t "10.11.0.173 sda writes"
+{ while true; do curl -s http://10.11.0.173:9100/metrics | gawk '/^node_disk_.+_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); fflush(); }'; sleep 1; done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
 ```
 
 

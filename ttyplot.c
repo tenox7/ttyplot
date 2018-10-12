@@ -22,7 +22,7 @@ int usage() {
     exit(0);
 }
 
-int getminmax(int pw, int n, double *values, double *min, double *max, double *avg) {
+void getminmax(int pw, int n, double *values, double *min, double *max, double *avg) {
     double tot=0;
     int i=0;
 
@@ -44,7 +44,7 @@ int getminmax(int pw, int n, double *values, double *min, double *max, double *a
     *avg=tot/pw;
 }
 
-int draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
+void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvhline(h-3, 2, ACS_HLINE, pw);
     mvaddch(h-3, 2+pw, ACS_RARROW);
 
@@ -59,7 +59,7 @@ int draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvprintw((ph*3/4)+1, 4, "%.1f %s", max/4, unit);
 }
 
-int draw_line(int ph, int l1, int l2, int x, chtype plotchar) {
+void draw_line(int ph, int l1, int l2, int x, chtype plotchar) {
     if(l1 > l2) {
         mvvline(ph+1-l1, x, plotchar, l1-l2 );
         mvvline(ph+1-l2, x, plotchar|A_REVERSE, l2 );
@@ -73,7 +73,7 @@ int draw_line(int ph, int l1, int l2, int x, chtype plotchar) {
 }
 
 
-int draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar) {
+void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar) {
     int i;
     int x=3;
     int l1=0, l2=0;
@@ -92,7 +92,7 @@ int draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max
 
 }
 
-int resize(int sig) {
+void resize(int sig) {
     endwin();
     refresh();
 }
