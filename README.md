@@ -1,6 +1,6 @@
 ttyplot
 =======
-a simple general purpose plotting utility for tty with data input from stdin
+a realtime plotting utility for terminal with data input from stdin
 
 takes data from stdin, most commonly unix pipeline and plots in text mode on a terminal or console,
 supports rate calculation for counters and up to two plos on a single display using reverse video for second line
@@ -24,6 +24,11 @@ vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot
 ### cpu usage from sar with title and fixed scale to 100%
 ```
 sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage" -u "%"
+```
+
+### memory usage from sar
+```
+sar -r 1 | gawk '{ print $5; fflush(); }' | ttyplot -s 100 -t "memory used %" -u "%" 
 ```
 
 ### ping plot
