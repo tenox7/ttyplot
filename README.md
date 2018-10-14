@@ -46,12 +46,12 @@ ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; 
 snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.1.2.2.1.16.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -t "ifindex 9 throughput" -u Mb/s
 ```
 
-### remote node load via prometheus node exporter
+### prometheus remote load average via node exporter
 ```
 { while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
 ```
 
-### Disk Throughput from iostat 
+### disk throughput from iostat 
 ```
 iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
 ```
@@ -74,6 +74,8 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 
 rate calculator for counters 
 ============================
+
+ttyplot supports calculating rate on "counter" style metrics, the rate is divided by measured time difference between samples
 
 ### snmpget counter rate for interface in MB/s using two plot lines
 ```
