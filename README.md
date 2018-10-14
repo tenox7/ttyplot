@@ -38,7 +38,7 @@ sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0;
 
 ### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg) and two lines plot
 ```
-ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); } | ttyplot -2 -u Mb/s
+ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
 ```
 
 ### snmp network throughput for an interface using snmpdelta with two lines plot
