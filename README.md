@@ -149,7 +149,8 @@ $ sudo apt-get install libncurses5-dev libncursesw5-dev
 
 ## compiling
 
-These commands will build `ttyplot` with optimizations enabled.
+These commands will build `ttyplot` with optimizations enabled and create a
+binary called `ttyplot` in the same folder.
 
 ### clang
 
