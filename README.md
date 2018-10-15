@@ -124,8 +124,10 @@ building
 ========
 
 ## dependencies
-`ttyplot` requires the ncurses library. The library can be installed with one of
-the following commands (based on your operating system).
+`ttyplot` requires the [ncurses
+library](https://www.gnu.org/software/ncurses/ncurses.html). The library
+can be installed with one of the following commands (based on your
+operating system).
 
 ### Arch Linux
 
