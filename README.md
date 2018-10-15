@@ -63,7 +63,7 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 
 ### fan speed from lm-sensors
 ```
-{ while true; do sensors | gawk '/^fan1:/ { print $2 }'; sleep 1; done } | ttyplot -t "fan speed" -u RPM
+{ while true; do sensors | gawk '/^fan1:/ { print $2; fflush(); }'; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
 
 ### prometheus remote load average via node exporter
