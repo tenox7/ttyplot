@@ -124,3 +124,47 @@ ttyplot [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
 stdio buffering
 ===============
 by default stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
+
+building
+========
+
+## dependencies
+`ttyplot` requires the [ncurses
+library](https://www.gnu.org/software/ncurses/ncurses.html). The library
+can be installed with one of the following commands (based on your
+operating system).
+
+### Arch Linux
+
+```
+$ sudo pacman -S ncurses
+```
+
+### RHEL/CentOS
+
+```
+$ sudo yum install ncurses-devel
+```
+
+### Debian/Ubuntu
+
+```
+$ sudo apt-get install libncurses5-dev libncursesw5-dev
+```
+
+## compiling
+
+These commands will build `ttyplot` with optimizations enabled and create a
+binary called `ttyplot` in the same folder.
+
+### clang
+
+```
+clang -O3 -lncurses ttyplot.c -o ttyplot
+```
+
+### gcc
+
+```
+gcc -O3 -lncurses ttyplot.c -o ttyplot
+```
