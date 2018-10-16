@@ -16,7 +16,7 @@
 #define verstring "github.com/tenox7/ttyplot 1.0"
 
 int usage() {
-    printf("Usage:\n asplot [-2] [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]\n\n"
+    printf("Usage:\n ttyplot [-2] [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]\n\n"
             "-2 read two values and draw two plots, the second one is in reveverse video\n\n"
             "-r calculate counter rate and divide by measured sample interval\n\n"
             "-c character to use for plot line, eg @ # %% . etc\n\n"
