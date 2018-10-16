@@ -1,3 +1,9 @@
+//
+// ttyplot: a realtime plotting utility for terminal with data input from stdin
+// by Antoni Sawicki aka tenox
+// Public Domain
+//
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
