@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <float.h>
 #include <time.h>
-#include <ncurses.h>
+#include <curses.h>
 #include <signal.h>
 
 #define verstring "github.com/tenox7/ttyplot 1.0"
