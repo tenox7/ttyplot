@@ -66,9 +66,9 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do sensors | gawk '/^fan1:/ { print $2; fflush(); }'; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
 
-### wifi signal level, note higher=worse as this is -dBm
+### wifi signal level in -dBM (higher is worse)
 ```
-{ while true; do iwconfig 2>/dev/null| gawk '/Signal level=/ { gsub(/level=-/,"", $(NF-1)); print 100-$(NF-1); fflush(); }'; sleep 1; done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
+{ while true; do iwconfig 2>/dev/null| gawk '/Signal level=/ { gsub(/level=-/,"", $(NF-1)); print $(NF-1); fflush(); }'; sleep 1; done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
 ```
 
 ### prometheus remote load average via node exporter
