@@ -61,6 +61,11 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do gawk '{ printf("%.1f\n", $1/1000); fflush(); }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
 ```
 
+### cpu temperature from lm-sensors, no awk, 95°C max.
+```
+{ while true; do sensors | grep CPU | cut -d '+' -f 2 | cut -d '.' -f 1 && sleep 1; done } | ./ttyplot -s 95 -t "CPU Temperature" -u "°C"
+```
+
 ### fan speed from lm-sensors
 ```
 { while true; do sensors | gawk '/^fan1:/ { print $2; fflush(); }'; sleep 1; done } | ttyplot -t "fan speed" -u RPM
