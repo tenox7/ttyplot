@@ -1,8 +1,10 @@
 
+CFLAGS = -Wall -O3
+
 all: ttyplot
 
 ttyplot: ttyplot.c
-	gcc ttyplot.c -o ttyplot -Wall -O3 -lcurses
+	$(CC) $< -o $@ $(CFLAGS) $(LDFLAGS) -lcurses
 
 clean:
 	rm -f ttyplot
