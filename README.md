@@ -109,7 +109,7 @@ options
 ```
 ttyplot [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
 
--2 read two values and draw two plots, the second one is in reveverse video
+-2 read two values and draw two plots, the second one is in reverse video
 
 -r calculate counter rate and divide by measured sample interval
 
