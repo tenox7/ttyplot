@@ -16,7 +16,7 @@ supports rate calculation for counters and up to two plos on a single display us
 usage examples
 ==============
 
-### cpu usage from vmstat
+### cpu usage from vmstat using awk to pick the right column
 ```
 vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot 
 ```
@@ -26,14 +26,14 @@ vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot
 sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage" -u "%"
 ```
 
-### memory usage from sar
+### memory usage from sar, using perl to pick the right column
 ```
-sar -r 1 | gawk '{ print $5; fflush(); }' | ttyplot -s 100 -t "memory used %" -u "%" 
+sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory used %" -u "%" 
 ```
 
-### ping plot
+### ping plot with sed
 ```
-ping 8.8.8.8 | gawk '{ gsub(/time=/,"",$(NF-1)); print $(NF-1); fflush(); }' | ttyplot -t "ping to 8.8.8.8" -u ms
+ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms
 ```
 
 ### local network throughput for all interfaces from sar using two lines
@@ -61,9 +61,9 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do gawk '{ printf("%.1f\n", $1/1000); fflush(); }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
 ```
 
-### fan speed from lm-sensors
+### fan speed from lm-sensors using grep, tr and cut
 ```
-{ while true; do sensors | gawk '/^fan1:/ { print $2; fflush(); }'; sleep 1; done } | ttyplot -t "fan speed" -u RPM
+{ while true; do sensors | grep fan1: | tr -s " " | cut -d" " -f2; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
 
 ### wifi signal level in -dBM (higher is worse)
@@ -76,14 +76,14 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
 ```
 
-### bitcoin price chart
+### bitcoin price chart using cut
 ```
 { while true; do curl -sL https://coinbase.com/api/v1/prices/historical | head -1 | cut -d, -f2 ; sleep 600; done } | ttyplot -t "bitcoin price" -u usd
 ```
 
 ### stock quote chart
 ```
-{ while true; do curl -s https://api.iextrading.com/1.0/stock/googl/price | gawk '{ print $1; fflush(); }'; sleep 600; done } | ttyplot -t "google stock price" -u usd
+{ while true; do curl -s https://api.iextrading.com/1.0/stock/googl/price; echo; sleep 600; done } | ttyplot -t "google stock price" -u usd
 ```
 
 
