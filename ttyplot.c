@@ -123,6 +123,7 @@ int main(int argc, char *argv[]) {
     int width=0, height=0;
     int plotwidth=0, plotheight=0;
     time_t t1,t2,td;
+    struct tm *lt;
     int c;
     chtype plotchar=ACS_VLINE;
     double max=FLT_MIN;
@@ -130,6 +131,7 @@ int main(int argc, char *argv[]) {
     double hardmax=FLT_MIN;
     char title[256]={0};
     char unit[64]={0};
+    char ls[256]={0};
     int rate=0;
     int two=0;
     
@@ -214,6 +216,8 @@ int main(int argc, char *argv[]) {
                 if(values2[n] < 0) // counter rewind
                     values2[n]=0;
             }
+        } else {
+            time(&t1);
         }
 
         erase();
@@ -239,8 +243,12 @@ int main(int argc, char *argv[]) {
 
         mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
 
+        lt=localtime(&t1);
+        asctime_r(lt, ls);
+        mvprintw(height-2, width-strlen(ls), "%s", ls);
+        
         mvvline(height-2, 5, plotchar|A_NORMAL, 1);
-        mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values1[n], min1, max1, avg1, unit);
+        mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
         if(rate)
             printw(" interval=%ds", td);
 
