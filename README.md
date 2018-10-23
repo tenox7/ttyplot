@@ -36,24 +36,9 @@ sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory us
 ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms
 ```
 
-### local network throughput for all interfaces from sar using two lines
+### wifi signal level in -dBM (higher is worse)
 ```
-sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
-```
-
-### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg) and two lines plot
-```
-ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
-```
-
-### snmp network throughput for an interface using snmpdelta with two lines plot
-```
-snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.1.2.2.1.16.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -t "ifindex 9 throughput" -u Mb/s
-```
-
-### disk throughput from iostat 
-```
-iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
+{ while true; do iwconfig 2>/dev/null | grep "Signal level" | sed -u 's/^.*Signal level=-//g; s/dBm//g'; sleep 1; done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
 ```
 
 ### cpu temperature from proc
@@ -66,16 +51,6 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do sensors | grep fan1: | tr -s " " | cut -d" " -f2; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
 
-### wifi signal level in -dBM (higher is worse)
-```
-{ while true; do iwconfig 2>/dev/null| gawk '/Signal level=/ { gsub(/level=-/,"", $(NF-1)); print $(NF-1); fflush(); }'; sleep 1; done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
-```
-
-### prometheus remote load average via node exporter
-```
-{ while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
-```
-
 ### bitcoin price chart using cut
 ```
 { while true; do curl -sL https://coinbase.com/api/v1/prices/historical | head -1 | cut -d, -f2 ; sleep 600; done } | ttyplot -t "bitcoin price" -u usd
@@ -86,10 +61,39 @@ iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nv
 { while true; do curl -s https://api.iextrading.com/1.0/stock/googl/price; echo; sleep 600; done } | ttyplot -t "google stock price" -u usd
 ```
 
+### prometheus remote load average via node exporter
+```
+{ while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
+```
+
+
+two line throughput examples
+============================
+ttyplot supports two line plot for in/out or read/write
+
+### local network throughput for all interfaces combined from sar
+```
+sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
+```
+
+### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg) and two lines plot
+```
+ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
+```
+
+### snmp network throughput for an interface using snmpdelta with two lines plot
+```
+snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.1.2.2.1.16.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -2 -t "ifindex 9 throughput" -u Mb/s
+```
+
+### disk throughput from iostat 
+```
+iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
+```
+
 
 rate calculator for counters 
 ============================
-
 ttyplot supports calculating rate on "counter" style metrics, the rate is divided by measured time difference between samples
 
 ### snmpget counter rate for interface in MB/s using two plot lines
