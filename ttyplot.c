@@ -103,6 +103,14 @@ void resize(int sig) {
     refresh();
 }
 
+void finish(int sig) {
+    curs_set(FALSE);
+    echo();
+    refresh();
+    endwin();
+    exit(0);
+}
+
 int main(int argc, char *argv[]) {
     double values1[1024]={0};
     double values2[1024]={0};
@@ -161,6 +169,7 @@ int main(int argc, char *argv[]) {
     noecho();
     curs_set(FALSE);
     signal(SIGWINCH, (void*)resize);
+    signal(SIGINT, (void*)finish);
     
     while(1) {
         if(two)
