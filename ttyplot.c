@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     double max=FLT_MIN;
     double softmax=FLT_MIN;
     double hardmax=FLT_MIN;
-    char title[256]={0};
+    char title[256]=".: ttyplot :.";
     char unit[64]={0};
     char ls[256]={0};
     int rate=0;
