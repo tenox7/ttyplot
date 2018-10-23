@@ -111,7 +111,7 @@ ttyplot supports calculating rate on "counter" style metrics, the rate is divide
 { while true; do snmpget  -v 2c -c public  10.23.73.254  1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.1.2.2.1.16.9 | gawk '{ print $NF/1000/1000; fflush(); }'; sleep 10; done } | ttyplot -2 -r -u "MB/s"
 ```
 
-### prometheus node exporter disk throughput for sda device using two lines 
+### prometheus node exporter disk throughput for sda device
 ```
 { while true; do curl -s http://10.11.0.173:9100/metrics | gawk '/^node_disk_.+_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); fflush(); }'; sleep 1; done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
 ```
