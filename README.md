@@ -73,8 +73,8 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 
 
 
-two line throughput examples
-============================
+network/disk throughput examples
+================================
 ttyplot supports two line plot for in/out or read/write
 
 ### local network throughput for all interfaces combined from sar
