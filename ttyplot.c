@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
             printw(" interval=%ds", td);
 
         if(two) {
-            mvchgat(height-1, 5, 1, A_REVERSE, 0, NULL);
+            mvaddch(height-1, 5, ' '|A_REVERSE);
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
 
