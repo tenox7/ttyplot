@@ -199,6 +199,9 @@ int main(int argc, char *argv[]) {
             
             values1[n]=(cval1-pval1)/td;
 
+            if(values1[n] < 0) // counter rewind
+                values1[n]=0;
+
             if(two) {
                 if(cval2==FLT_MAX) 
                     pval2=values2[n];
@@ -207,6 +210,9 @@ int main(int argc, char *argv[]) {
                 cval2=values2[n];
                 
                 values2[n]=(cval2-pval2)/td;
+
+                if(values2[n] < 0) // counter rewind
+                    values2[n]=0;
             }
         }
 
