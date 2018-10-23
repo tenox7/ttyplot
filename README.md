@@ -12,6 +12,8 @@ supports rate calculation for counters and up to two plos on a single display us
 ![ttyplot snmp](ttyplot-snmp.png)
 
 
+&nbsp;
+&nbsp;
 
 usage examples
 ==============
@@ -66,6 +68,8 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do curl -s  http://10.4.7.180:9100/metrics | gawk '/^node_load1 / { print $2; fflush(); }'; sleep 1; done } | ttyplot
 ```
 
+&nbsp;
+&nbsp;
 
 
 
@@ -93,6 +97,8 @@ snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.10.9  1.3.6.1.2.
 iostat -xmy 1 | gawk '/^nvme0n1/ { print $4,$5; fflush(); }' | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
 ```
 
+&nbsp;
+&nbsp;
 
 
 
@@ -111,6 +117,8 @@ ttyplot supports calculating rate on "counter" style metrics, the rate is divide
 ```
 
 
+&nbsp;
+&nbsp;
 
 
 options
@@ -135,6 +143,8 @@ ttyplot [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
 -u unit displayed beside vertical bar
 ```
 
+&nbsp;
+&nbsp;
 
 
 
