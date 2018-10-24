@@ -13,7 +13,7 @@
 #include <curses.h>
 #include <signal.h>
 
-#define verstring "github.com/tenox7/ttyplot 1.0"
+#define verstring "github.com/tenox7/ttyplot 1.1"
 
 void usage() {
     printf("Usage:\n ttyplot [-2] [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]\n\n"
