@@ -2,12 +2,15 @@ ttyplot
 =======
 a realtime plotting utility for terminal with data input from stdin
 
-takes data from stdin, most commonly unix pipeline and plots in text mode on a terminal or console,
-supports rate calculation for counters and up to two plos on a single display using reverse video for second line
+takes data from stdin, most commonly unix pipeline and plots in text mode on a terminal or console:
 
 ![ttyplot ping](ttyplot-ping.png)
 
+&nbsp;
+&nbsp;
 
+
+supports rate calculation for counters and up to two plos on a single display using reverse video for second line:
 
 ![ttyplot snmp](ttyplot-snmp.png)
 
