@@ -66,9 +66,9 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do curl -s https://api.iextrading.com/1.0/stock/googl/price; echo; sleep 600; done } | ttyplot -t "google stock price" -u usd
 ```
 
-### prometheus remote load average via node exporter
+### prometheus load average via node exporter
 ```
-{ while true; do curl -s  http://10.4.7.180:9100/metrics | awk '/^node_load1 / { print $2 }'; sleep 1; done } | ttyplot
+{ while true; do curl -s  http://10.4.7.180:9100/metrics | grep "^node_load1 " | cut -d" " -f2; sleep 1; done } | ttyplot
 ```
 
 &nbsp;
