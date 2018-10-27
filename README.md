@@ -36,6 +36,11 @@ sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage"
 sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory used %" -u "%" 
 ```
 
+### number of processes in running and io blocked state
+```
+vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -2 -t "procs in R and D state"
+```
+
 ### ping plot with sed
 ```
 ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms
@@ -71,6 +76,7 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do curl -s  http://10.4.7.180:9100/metrics | grep "^node_load1 " | cut -d" " -f2; sleep 1; done } | ttyplot
 ```
 
+
 &nbsp;
 &nbsp;
 
@@ -87,7 +93,7 @@ sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0;
 
 ### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg) 
 ```
-ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk 'BEGIN { getline; } { print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
+ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk '{ print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
 ```
 
 ### snmp network throughput for an interface using snmpdelta
