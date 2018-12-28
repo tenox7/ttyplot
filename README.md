@@ -113,7 +113,7 @@ iostat -xmy 1 nvme0n1 | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d " " -f 4,5 | tt
 
 rate calculator for counters 
 ============================
-ttyplot supports calculating rate on "counter" style metrics, the rate is divided by measured time difference between samples
+ttyplot supports "counter" style metrics, calculating "rate" by measured time difference between samples
 
 ### snmp network throughput for an interface using snmpget
 ```
