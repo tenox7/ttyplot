@@ -10,7 +10,7 @@ takes data from standard input, most commonly unix pipeline and plots in text mo
 &nbsp;
 
 
-supports rate calculation for counters and up to two plos on a single display using reverse video for second line, for example snmpget:
+supports rate calculation for counters and up to two graphs on a single display using reverse video for second line, for example snmpget:
 
 ![ttyplot snmp](ttyplot-snmp.png)
 
