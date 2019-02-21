@@ -134,13 +134,15 @@ options
 =======
 
 ```
-ttyplot [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
+ttyplot [-r] [-c plotchar] [-C clipchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
 
 -2 read two values and draw two plots, the second one is in reverse video
 
 -r calculate counter rate and divide by measured sample interval
 
 -c character to use for plot line, eg @ # % . etc
+
+-C character to use for plot line when value exceeds max (default: x)
 
 -s softmax is an initial maximum value that can grow if data input has larger value
 

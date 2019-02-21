@@ -20,6 +20,7 @@ void usage() {
             "-2 read two values and draw two plots, the second one is in reverse video\n\n"
             "-r calculate counter rate and divide by measured sample interval\n\n"
             "-c character to use for plot line, eg @ # %% . etc\n\n"
+            "-C character to use for plot line when value exceeds max (default: x)\n\n"
             "-s softmax is an initial maximum value that can grow if data input has larger value\n\n"
             "-m hardmax is a hard maximum value that can never grow, \n"
             "   if data input has larger value the plot line will not be drawn\n\n"
@@ -65,21 +66,33 @@ void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvprintw((ph*3/4)+1, 4, "%.1f %s", max/4, unit);
 }
 
-void draw_line(int ph, int l1, int l2, int x, chtype plotchar) {
+void clip_bar(int ph, int *y, int *l, chtype *plotchar, chtype clipchar) {
+  if (*y < 1 && clipchar) {
+    *y = 1;
+    *l = ph;
+    *plotchar = clipchar;
+  }
+}
+
+void draw_line(int ph, int l1, int l2, int x, chtype plotchar, chtype clipchar) {
+    int y1=ph+1-l1, y2=ph+1-l2;
+    chtype char1=plotchar, char2=(l1 < l2) ? ' ' : plotchar;
+    clip_bar(ph, &y1, &l1, &char1, clipchar);
+    clip_bar(ph, &y2, &l2, &char2, clipchar);
     if(l1 > l2) {
-        mvvline(ph+1-l1, x, plotchar, l1-l2 );
-        mvvline(ph+1-l2, x, plotchar|A_REVERSE, l2 );
+        mvvline(y1, x, char1, l1-l2 );
+        mvvline(y2, x, char2|A_REVERSE, l2 );
     } else if(l1 < l2) {
-        mvvline(ph+1-l2, x, ' '|A_REVERSE,  l2-l1 );
-        mvvline(ph+1-l1, x, plotchar|A_REVERSE, l1 );
+        mvvline(y2, x, char2|A_REVERSE,  l2-l1 );
+        mvvline(y1, x, char1|A_REVERSE, l1 );
     } else {
-        mvvline(ph+1-l2, x, plotchar|A_REVERSE, l2 );
+        mvvline(y2, x, char2|A_REVERSE, l2 );
     }
 
 }
 
 
-void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar) {
+void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar, chtype clipchar) {
     int i;
     int x=3;
     int l1=0, l2=0;
@@ -87,13 +100,13 @@ void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double ma
     for(i=n+1; i<pw; i++) {
         l1=(((int)v1[i]/max)*ph);
         l2=(((int)v2[i]/max)*ph);
-        draw_line(ph, l1, l2, x++, plotchar);
+        draw_line(ph, l1, l2, x++, plotchar, clipchar);
     }
 
     for(i=0; i<=n; i++) {
         l1=(((int)v1[i]/max)*ph);
         l2=(((int)v2[i]/max)*ph);
-        draw_line(ph, l1, l2, x++, plotchar);
+        draw_line(ph, l1, l2, x++, plotchar, clipchar);
     }
 
 }
@@ -125,7 +138,7 @@ int main(int argc, char *argv[]) {
     time_t t1,t2,td;
     struct tm *lt;
     int c;
-    chtype plotchar=ACS_VLINE;
+    chtype plotchar=ACS_VLINE, clipchar='x';
     double max=FLT_MIN;
     double softmax=FLT_MIN;
     double hardmax=FLT_MIN;
@@ -137,7 +150,7 @@ int main(int argc, char *argv[]) {
     
     
     opterr=0;
-    while((c=getopt(argc, argv, "2rc:s:m:t:u:")) != -1)
+    while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
         switch(c) {
             case 'r':
                 rate=1;
@@ -148,6 +161,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'c':
                 plotchar=optarg[0];
+                break;
+            case 'C':
+                clipchar=optarg[0];
                 break;
             case 's':
                 softmax=atof(optarg);
@@ -257,7 +273,7 @@ int main(int argc, char *argv[]) {
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
 
-        draw_values(height, width, plotheight, plotwidth, values1, values2, max, n, plotchar);
+        draw_values(height, width, plotheight, plotwidth, values1, values2, max, n, plotchar, clipchar);
 
         draw_axes(height, width, plotheight, plotwidth, max, unit);
 
