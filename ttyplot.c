@@ -1,6 +1,6 @@
 //
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
-// Copyright (c) 2018 by Antoni Sawicki
+// Copyright (c) 2018-2019 by Antoni Sawicki
 // Copyright (c) 2019 by Google LLC
 // Apache License 2.0
 //
@@ -99,14 +99,14 @@ void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double ma
     int l1=0, l2=0;
 
     for(i=n+1; i<pw; i++) {
-        l1=(((int)v1[i]/max)*ph);
-        l2=(((int)v2[i]/max)*ph);
+        l1=(int)((v1[i]/max)*(double)ph);
+        l2=(int)((v2[i]/max)*(double)ph);
         draw_line(ph, l1, l2, x++, plotchar, clipchar);
     }
 
     for(i=0; i<=n; i++) {
-        l1=(((int)v1[i]/max)*ph);
-        l2=(((int)v2[i]/max)*ph);
+        l1=(int)((v1[i]/max)*(double)ph);
+        l2=(int)((v2[i]/max)*(double)ph);
         draw_line(ph, l1, l2, x++, plotchar, clipchar);
     }
 
