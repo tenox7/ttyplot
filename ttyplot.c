@@ -223,6 +223,11 @@ int main(int argc, char *argv[]) {
             break;
         } 
 
+        if(values1[n] < 0)
+            values1[n] = 0;
+        if(values2[n] < 0)
+            values2[n] = 0;
+
         if(rate) {
             t2=t1;
             time(&t1);
