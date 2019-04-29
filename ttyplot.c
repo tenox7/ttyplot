@@ -35,7 +35,7 @@ void usage() {
             "-2 read two values and draw two plots, the second one is in reverse video\n\n"
             "-r calculate counter rate and divide by measured sample interval\n\n"
             "-c character to use for plot line, eg @ # %% . etc\n\n"
-            "-C character to use for plot line when value exceeds max (default: x)\n\n"
+            "-C character to use for plot line when value exceeds hardmax (default: x)\n\n"
             "-s softmax is an initial maximum value that can grow if data input has larger value\n\n"
             "-m hardmax is a hard maximum value that can never grow, \n"
             "   if data input has larger value the plot line will not be drawn\n\n"
@@ -65,7 +65,6 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
 
     *avg=tot/pw;
 }
-
 
 void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
@@ -106,7 +105,6 @@ void draw_line(int ph, int l1, int l2, int x, chtype plotchar, chtype clipchar) 
     }
 
 }
-
 
 void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar, chtype clipchar) {
     int i;
@@ -163,7 +161,6 @@ int main(int argc, char *argv[]) {
     char ls[256]={0};
     int rate=0;
     int two=0;
-    
     
     opterr=0;
     while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
@@ -269,7 +266,6 @@ int main(int argc, char *argv[]) {
         if(plotwidth>=(sizeof(values1)/sizeof(double))-1)
             return 0;
         
-
         getminmax(plotwidth, n, values1, &min1, &max1, &avg1);
         getminmax(plotwidth, n, values2, &min2, &max2, &avg2);
 
@@ -304,7 +300,6 @@ int main(int argc, char *argv[]) {
         draw_axes(height, width, plotheight, plotwidth, max, unit);
 
         mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
-
 
         if(n<(plotwidth)-1)
             n++;
