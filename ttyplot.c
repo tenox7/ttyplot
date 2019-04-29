@@ -16,6 +16,20 @@
 
 #define verstring "github.com/tenox7/ttyplot 1.2"
 
+#ifdef NOACS
+#define T_HLINE '-'
+#define T_VLINE '|'
+#define T_RARR '>'
+#define T_UARR '^'
+#define T_LLCR 'L'
+#else
+#define T_HLINE ACS_HLINE
+#define T_VLINE ACS_VLINE
+#define T_RARR ACS_RARROW
+#define T_UARR ACS_UARROW
+#define T_LLCR ACS_LLCORNER
+#endif
+
 void usage() {
     printf("Usage:\n ttyplot [-2] [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]\n\n"
             "-2 read two values and draw two plots, the second one is in reverse video\n\n"
@@ -52,14 +66,15 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
     *avg=tot/pw;
 }
 
+
 void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
-    mvhline(h-3, 2, ACS_HLINE, pw);
-    mvaddch(h-3, 2+pw, ACS_RARROW);
+    mvhline(h-3, 2, T_HLINE, pw);
+    mvaddch(h-3, 2+pw, T_RARR);
 
-    mvvline(2, 2, ACS_VLINE, ph);
-    mvaddch(1, 2, ACS_UARROW);
+    mvvline(2, 2, T_VLINE, ph);
+    mvaddch(1, 2, T_UARR);
 
-    mvaddch(h-3, 2, ACS_LLCORNER);
+    mvaddch(h-3, 2, T_LLCR);
 
     mvprintw(1, 4, "%.1f %s", max, unit);
     mvprintw((ph/4)+1, 4, "%.1f %s", max*3/4, unit);
@@ -139,7 +154,7 @@ int main(int argc, char *argv[]) {
     time_t t1,t2,td;
     struct tm *lt;
     int c;
-    chtype plotchar=ACS_VLINE, clipchar='x';
+    chtype plotchar=T_VLINE, clipchar='x';
     double max=FLT_MIN;
     double softmax=FLT_MIN;
     double hardmax=FLT_MIN;
