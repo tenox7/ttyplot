@@ -204,6 +204,11 @@ int main(int argc, char *argv[]) {
     curs_set(FALSE);
     signal(SIGWINCH, (void*)resize);
     signal(SIGINT, (void*)finish);
+
+    erase();
+    getmaxyx(stdscr, height, width);
+    mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
+    refresh();
     
     while(1) {
         if(two)
