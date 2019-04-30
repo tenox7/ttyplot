@@ -2,7 +2,7 @@ ttyplot
 =======
 a realtime plotting utility for terminal with data input from stdin
 
-takes data from standard input, most commonly unix pipeline and plots in text mode on a terminal or console, for example ping:
+takes data from standard input / unix pipeline, most commonly some tool like ping, snmpget, netstat, ifconfig, sar, vmstat, etc. and plots in text mode on a terminal in real time, for example ping:
 
 ![ttyplot ping](ttyplot-ping.png)
 
