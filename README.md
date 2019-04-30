@@ -2,7 +2,7 @@ ttyplot
 =======
 a realtime plotting utility for terminal with data input from stdin
 
-takes data from standard input / unix pipeline, most commonly some tool like ping, snmpget, netstat, ifconfig, sar, vmstat, etc. and plots in text mode on a terminal in real time, for example ping:
+takes data from standard input / unix pipeline, most commonly some tool like *ping, snmpget, netstat, ifconfig, sar, vmstat*, etc. and plots in text mode on a terminal in real time, for example simple **ping**:
 
 ![ttyplot ping](ttyplot-ping.png)
 
@@ -10,7 +10,7 @@ takes data from standard input / unix pipeline, most commonly some tool like pin
 &nbsp;
 
 
-supports rate calculation for counters and up to two graphs on a single display using reverse video for second line, for example snmpget:
+supports rate calculation for counters and up to two graphs on a single display using reverse video for second line, for example **snmpget**:
 
 ![ttyplot snmp](ttyplot-snmp.png)
 
