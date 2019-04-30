@@ -147,12 +147,11 @@ ttyplot [-r] [-c plotchar] [-C clipchar] [-s softmax] [-m hardmax] [-t title] [-
 
 -c character to use for plot line, eg @ # % . etc
 
--C character to use for plot line when value exceeds max (default: x)
+-e character to use for plot error line when value exceeds max (default: e)
 
 -s softmax is an initial maximum value that can grow if data input has larger value
 
--m hardmax is a hard maximum value that can never grow, 
-   if data input has larger value the plot line will not be drawn
+-m hardmax is a hard maximum value, if exceeded error line will be drawn (see -e)
 
 -t title of the plot
 

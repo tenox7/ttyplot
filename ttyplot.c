@@ -1,6 +1,6 @@
 //
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
-// Copyright (c) 2018-2019 by Antoni Sawicki
+// Copyright (c) 2018 by Antoni Sawicki
 // Copyright (c) 2019 by Google LLC
 // Apache License 2.0
 //
@@ -14,7 +14,7 @@
 #include <curses.h>
 #include <signal.h>
 
-#define verstring "github.com/tenox7/ttyplot 1.2"
+#define verstring "github.com/tenox7/ttyplot 1.3"
 
 #ifdef NOACS
 #define T_HLINE '-'
@@ -35,10 +35,9 @@ void usage() {
             "-2 read two values and draw two plots, the second one is in reverse video\n\n"
             "-r calculate counter rate and divide by measured sample interval\n\n"
             "-c character to use for plot line, eg @ # %% . etc\n\n"
-            "-C character to use for plot line when value exceeds hardmax (default: x)\n\n"
+            "-e character to use for plot error line when value exceeds hardmax (default: e)\n\n"
             "-s softmax is an initial maximum value that can grow if data input has larger value\n\n"
-            "-m hardmax is a hard maximum value that can never grow, \n"
-            "   if data input has larger value the plot line will not be drawn\n\n"
+            "-m hardmax is a hard maximum value, if exceeded error line will be drawn (see -e)\n\n"
             "-t title of the plot\n\n"
             "-u unit displayed beside vertical bar\n\n");
     exit(0);
@@ -69,60 +68,36 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
 void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvaddch(h-3, 2+pw, T_RARR);
-
     mvvline(2, 2, T_VLINE, ph);
     mvaddch(1, 2, T_UARR);
-
     mvaddch(h-3, 2, T_LLCR);
-
     mvprintw(1, 4, "%.1f %s", max, unit);
     mvprintw((ph/4)+1, 4, "%.1f %s", max*3/4, unit);
     mvprintw((ph/2)+1, 4, "%.1f %s", max/2, unit);
     mvprintw((ph*3/4)+1, 4, "%.1f %s", max/4, unit);
 }
 
-void clip_bar(int ph, int *y, int *l, chtype *plotchar, chtype clipchar) {
-  if (*y < 1 && clipchar) {
-    *y = 1;
-    *l = ph;
-    *plotchar = clipchar;
-  }
-}
-
-void draw_line(int ph, int l1, int l2, int x, chtype plotchar, chtype clipchar) {
-    int y1=ph+1-l1, y2=ph+1-l2;
-    chtype char1=plotchar, char2=(l1 < l2) ? ' ' : plotchar;
-    clip_bar(ph, &y1, &l1, &char1, clipchar);
-    clip_bar(ph, &y2, &l2, &char2, clipchar);
+void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype ce) {
     if(l1 > l2) {
-        mvvline(y1, x, char1, l1-l2 );
-        mvvline(y2, x, char2|A_REVERSE, l2 );
+        mvvline(ph+1-l1, x, c1, l1-l2 );
+        mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
     } else if(l1 < l2) {
-        mvvline(y2, x, char2|A_REVERSE,  l2-l1 );
-        mvvline(y1, x, char1|A_REVERSE, l1 );
+        mvvline(ph+1-l2, x, (c2==ce) ? c2|A_REVERSE : ' '|A_REVERSE,  l2-l1 );
+        mvvline(ph+1-l1, x, c1|A_REVERSE, l1 );
     } else {
-        mvvline(y2, x, char2|A_REVERSE, l2 );
+        mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
     }
-
 }
 
-void draw_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype plotchar, chtype clipchar) {
+void plot_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype pc, chtype ce, double hm) {
     int i;
     int x=3;
-    int l1=0, l2=0;
 
-    for(i=n+1; i<pw; i++) {
-        l1=(int)((v1[i]/max)*(double)ph);
-        l2=(int)((v2[i]/max)*(double)ph);
-        draw_line(ph, l1, l2, x++, plotchar, clipchar);
-    }
+    for(i=n+1; i<pw; i++)
+        draw_line(x++, ph, (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph), (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph), (v1[i]>hm) ? ce : pc, (v2[i]>hm) ? ce : pc, ce);
 
-    for(i=0; i<=n; i++) {
-        l1=(int)((v1[i]/max)*(double)ph);
-        l2=(int)((v2[i]/max)*(double)ph);
-        draw_line(ph, l1, l2, x++, plotchar, clipchar);
-    }
-
+    for(i=0; i<=n; i++)
+        draw_line(x++, ph, (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph), (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph), (v1[i]>hm) ? ce : pc, (v2[i]>hm) ? ce : pc, ce);
 }
 
 void resize(int sig) {
@@ -152,10 +127,10 @@ int main(int argc, char *argv[]) {
     time_t t1,t2,td;
     struct tm *lt;
     int c;
-    chtype plotchar=T_VLINE, clipchar='x';
+    chtype plotchar=T_VLINE, errchar='e';
     double max=FLT_MIN;
     double softmax=FLT_MIN;
-    double hardmax=FLT_MIN;
+    double hardmax=FLT_MAX;
     char title[256]=".: ttyplot :.";
     char unit[64]={0};
     char ls[256]={0};
@@ -175,8 +150,8 @@ int main(int argc, char *argv[]) {
             case 'c':
                 plotchar=optarg[0];
                 break;
-            case 'C':
-                clipchar=optarg[0];
+            case 'e':
+                errchar=optarg[0];
                 break;
             case 's':
                 softmax=atof(optarg);
@@ -276,7 +251,7 @@ int main(int argc, char *argv[]) {
 
         if(max<softmax)
             max=softmax;
-        if(hardmax!=FLT_MIN)
+        if(hardmax!=FLT_MAX)
             max=hardmax;
 
         mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
@@ -295,7 +270,7 @@ int main(int argc, char *argv[]) {
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
 
-        draw_values(height, width, plotheight, plotwidth, values1, values2, max, n, plotchar, clipchar);
+        plot_values(height, width, plotheight, plotwidth, values1, values2, max, n, plotchar, errchar, hardmax);
 
         draw_axes(height, width, plotheight, plotwidth, max, unit);
 
@@ -311,6 +286,5 @@ int main(int argc, char *argv[]) {
     }
 
     endwin();
-
     return 0;
 }
