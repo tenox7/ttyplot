@@ -178,6 +178,7 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, (void*)finish);
 
     erase();
+    refresh();
     getmaxyx(stdscr, height, width);
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
@@ -235,6 +236,9 @@ int main(int argc, char *argv[]) {
         }
 
         erase();
+        #ifdef _AIX
+        refresh();
+        #endif
         getmaxyx(stdscr, height, width);
         plotheight=height-4;
         plotwidth=width-4;
@@ -260,7 +264,11 @@ int main(int argc, char *argv[]) {
         asctime_r(lt, ls);
         mvprintw(height-2, width-strlen(ls), "%s", ls);
 
-        mvaddch(height-2, 5, plotchar|A_NORMAL);
+        #ifdef _AIX
+        mvaddch(height-2, 5, plotchar);
+        #else
+        mvvline(height-2, 5, plotchar|A_NORMAL, 1);
+        #endif
         mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
         if(rate)
             printw(" interval=%ds", td);
