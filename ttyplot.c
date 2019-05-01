@@ -67,14 +67,14 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
 
 void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
-    mvaddch(h-3, 2+pw, T_RARR);
     mvvline(2, 2, T_VLINE, ph);
-    mvaddch(1, 2, T_UARR);
-    mvaddch(h-3, 2, T_LLCR);
     mvprintw(1, 4, "%.1f %s", max, unit);
     mvprintw((ph/4)+1, 4, "%.1f %s", max*3/4, unit);
     mvprintw((ph/2)+1, 4, "%.1f %s", max/2, unit);
     mvprintw((ph*3/4)+1, 4, "%.1f %s", max/4, unit);
+    mvaddch(h-3, 2+pw, T_RARR);
+    mvaddch(1, 2, T_UARR);
+    mvaddch(h-3, 2, T_LLCR);
 }
 
 void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype ce) {
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
         asctime_r(lt, ls);
         mvprintw(height-2, width-strlen(ls), "%s", ls);
 
-        mvvline(height-2, 5, plotchar|A_NORMAL, 1);
+        mvaddch(height-2, 5, plotchar|A_NORMAL);
         mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
         if(rate)
             printw(" interval=%ds", td);
