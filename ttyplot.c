@@ -179,7 +179,12 @@ int main(int argc, char *argv[]) {
 
     erase();
     refresh();
+    #ifdef NOGETMAXYX
+    height=LINES;
+    width=COLS;
+    #else
     getmaxyx(stdscr, height, width);
+    #endif
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
 
@@ -239,7 +244,12 @@ int main(int argc, char *argv[]) {
         #ifdef _AIX
         refresh();
         #endif
+        #ifdef NOGETMAXYX
+        height=LINES;
+        width=COLS;
+        #else
         getmaxyx(stdscr, height, width);
+        #endif
         plotheight=height-4;
         plotwidth=width-4;
         if(plotwidth>=(sizeof(values1)/sizeof(double))-1)
