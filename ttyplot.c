@@ -51,15 +51,15 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
     *max=FLT_MIN;
     tot=FLT_MIN;
 
-    for(i=0; i<pw; i++) 
+    for(i=0; i<pw; i++)
        if(values[i]>*max)
             *max=values[i];
-    
-    for(i=0; i<pw; i++) 
+
+    for(i=0; i<pw; i++)
         if(values[i]<*min)
             *min=values[i];
 
-    for(i=0; i<pw; i++) 
+    for(i=0; i<pw; i++)
         tot=tot+values[i];
 
     *avg=tot/pw;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     char ls[256]={0};
     int rate=0;
     int two=0;
-    
+
     opterr=0;
     while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
         switch(c) {
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     getmaxyx(stdscr, height, width);
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
-    
+
     while(1) {
         if(two)
             r=scanf("%lf %lf", &values1[n], &values2[n]);
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
         }
         else if(r<0) {
             break;
-        } 
+        }
 
         if(values1[n] < 0)
             values1[n] = 0;
@@ -207,24 +207,24 @@ int main(int argc, char *argv[]) {
             if(td==0)
                 td=1;
 
-            if(cval1==FLT_MAX) 
+            if(cval1==FLT_MAX)
                 pval1=values1[n];
             else
                 pval1=cval1;
             cval1=values1[n];
-            
+
             values1[n]=(cval1-pval1)/td;
 
             if(values1[n] < 0) // counter rewind
                 values1[n]=0;
 
             if(two) {
-                if(cval2==FLT_MAX) 
+                if(cval2==FLT_MAX)
                     pval2=values2[n];
                 else
                     pval2=cval2;
                 cval2=values2[n];
-                
+
                 values2[n]=(cval2-pval2)/td;
 
                 if(values2[n] < 0) // counter rewind
@@ -240,7 +240,7 @@ int main(int argc, char *argv[]) {
         plotwidth=width-4;
         if(plotwidth>=(sizeof(values1)/sizeof(double))-1)
             return 0;
-        
+
         getminmax(plotwidth, n, values1, &min1, &max1, &avg1);
         getminmax(plotwidth, n, values2, &min2, &max2, &avg2);
 
@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
         lt=localtime(&t1);
         asctime_r(lt, ls);
         mvprintw(height-2, width-strlen(ls), "%s", ls);
-        
+
         mvvline(height-2, 5, plotchar|A_NORMAL, 1);
         mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
         if(rate)
@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
         else
             n=0;
 
-        move(0,0);            
+        move(0,0);
         refresh();
     }
 
