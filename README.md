@@ -21,12 +21,12 @@ supports rate calculation for counters and up to two graphs on a single display 
 usage examples
 ==============
 
-### cpu usage from vmstat using awk to pick the right column
+### cpu usage from **vmstat** using awk to pick the right column
 ```
 vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot 
 ```
 
-### cpu usage from sar with title and fixed scale to 100%
+### cpu usage from **sar** with title and fixed scale to 100%
 ```
 sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage" -u "%"
 ```
@@ -41,7 +41,7 @@ sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory us
 vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -2 -t "procs in R and D state"
 ```
 
-### load average via uptime and awk
+### load average via **uptime** and awk
 ```
 { while true; do uptime | gawk '{ gsub(/,/, ""); print $(NF-2) }'; sleep 1; done } | ttyplot -t "load average" -s load
 ```
@@ -51,7 +51,7 @@ vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -2 -t "procs in
 ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms
 ```
 
-### wifi signal level in -dBM (higher is worse)
+### wifi signal level in -dBM (higher is worse) using **iwconfig**
 ```
 { while true; do iwconfig 2>/dev/null | grep "Signal level" | sed -u 's/^.*Signal level=-//g; s/dBm//g'; sleep 1; done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
 ```
@@ -61,7 +61,7 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do awk '{ printf("%.1f\n", $1/1000) }' /sys/class/thermal/thermal_zone0/temp; sleep 1; done } | ttyplot -t "cpu temp" -u C
 ```
 
-### fan speed from lm-sensors using grep, tr and cut
+### fan speed from **lm-sensors** using grep, tr and cut
 ```
 { while true; do sensors | grep fan1: | tr -s " " | cut -d" " -f2; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
@@ -76,7 +76,7 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do curl -sL https://api.iextrading.com/1.0/stock/googl/price; echo; sleep 600; done } | ttyplot -t "google stock price" -u usd
 ```
 
-### prometheus load average via node exporter
+### prometheus load average via **node_exporter**
 ```
 { while true; do curl -s  http://10.4.7.180:9100/metrics | grep "^node_load1 " | cut -d" " -f2; sleep 1; done } | ttyplot
 ```
@@ -91,7 +91,7 @@ network/disk throughput examples
 ================================
 ttyplot supports two line plot for in/out or read/write
 
-### local network throughput for all interfaces combined from sar
+### local network throughput for all interfaces combined from **sar**
 ```
 sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
 ```
@@ -101,12 +101,12 @@ sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0;
 ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk '{ print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
 ```
 
-### snmp network throughput for an interface using snmpdelta
+### snmp network throughput for an interface using **snmpdelta**
 ```
 snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -2 -t "interface 9 throughput" -u Mb/s
 ```
 
-### disk throughput from iostat 
+### disk throughput from **iostat**
 ```
 iostat -xmy 1 nvme0n1 | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d " " -f 4,5 | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
 ```
@@ -118,14 +118,19 @@ iostat -xmy 1 nvme0n1 | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d " " -f 4,5 | tt
 
 rate calculator for counters 
 ============================
-ttyplot supports "counter" style metrics, calculating "rate" by measured time difference between samples
+ttyplot also supports "counter" style metrics, calculating "rate" by measured time difference between samples
 
-### snmp network throughput for an interface using snmpget
+### snmp network throughput for an interface using **snmpget**
 ```
 { while true; do snmpget  -v 2c -c public  10.23.73.254  1.3.6.1.2.1.2.2.1.{10,16}.9 | awk '{ print $NF/1000/1000; }'; sleep 10; done } | ttyplot -2 -r -u "MB/s"
 ```
 
-### prometheus node exporter disk throughput for sda device
+### local interface throughput using **ip link** and **jq**
+```
+{ while true; do ip -s -j link show enp0s31f6 | jq .[].stats64.rx.bytes/1024/1024,.[].stats64.tx.bytes/1024/1024; sleep 1; done } | ttyplot -r -2 -u "MB/s"
+```
+
+### prometheus node exporter disk throughput for /dev/sda
 ```
 { while true; do curl -s http://10.11.0.173:9100/metrics | awk '/^node_disk_.+_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); }'; sleep 1; done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
 ```
