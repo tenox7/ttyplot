@@ -1,4 +1,4 @@
-CFLAGS += -Wall -O3
+CFLAGS += -Wall
 LDLIBS += -lcurses
 
 all: ttyplot
