@@ -6,5 +6,8 @@ all: ttyplot
 ttyplot: ttyplot.c
 	$(CC) $< -o $@ $(CFLAGS) $(LDFLAGS) -lcurses
 
+torture: torture.c
+	$(CC) $< -o $@ $(CFLAGS) $(LDFLAGS)
+
 clean:
-	rm -f ttyplot
+	rm -f ttyplot torture
