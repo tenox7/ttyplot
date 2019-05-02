@@ -281,11 +281,11 @@ int main(int argc, char *argv[]) {
         mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
 
         lt=localtime(&t1);
-	#ifdef __sun
+        #ifdef __sun
         asctime_r(lt, ls, sizeof(ls));
-	#else
+        #else
         asctime_r(lt, ls);
-	#endif
+        #endif
         mvprintw(height-2, width-strlen(ls), "%s", ls);
 
         #ifdef _AIX
