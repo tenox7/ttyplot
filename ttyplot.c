@@ -14,7 +14,7 @@
 #include <curses.h>
 #include <signal.h>
 
-#define verstring "github.com/tenox7/ttyplot 1.3"
+#define verstring "github.com/tenox7/ttyplot 1.4"
 
 #ifdef NOACS
 #define T_HLINE '-'
