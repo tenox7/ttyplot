@@ -94,10 +94,20 @@ void plot_values(int h, int w, int ph, int pw, double *v1, double *v2, double ma
     int x=3;
 
     for(i=n+1; i<pw; i++)
-        draw_line(x++, ph, (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph), (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph), (v1[i]>hm) ? ce : pc, (v2[i]>hm) ? ce : pc, ce);
+        draw_line(x++, ph,
+                  (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph),
+                  (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph),
+                  (v1[i]>hm) ? ce : pc,
+                  (v2[i]>hm) ? ce : pc,
+                  ce);
 
     for(i=0; i<=n; i++)
-        draw_line(x++, ph, (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph), (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph), (v1[i]>hm) ? ce : pc, (v2[i]>hm) ? ce : pc, ce);
+        draw_line(x++, ph,
+                  (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph),
+                  (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph),
+                  (v1[i]>hm) ? ce : pc,
+                  (v2[i]>hm) ? ce : pc,
+                  ce);
 }
 
 void resize(int sig) {
