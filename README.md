@@ -140,11 +140,11 @@ ttyplot also supports "counter" style metrics, calculating "rate" by measureing 
 &nbsp;
 
 
-options
-=======
+parameters
+==========
 
 ```
-ttyplot [-r] [-c plotchar] [-C clipchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
+ttyplot [-2] [-r] [-c plotchar] [-e errchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
 
 -2 read two values and draw two plots, the second one is in reverse video
 
