@@ -168,6 +168,16 @@ ttyplot [-r] [-c plotchar] [-C clipchar] [-s softmax] [-m hardmax] [-t title] [-
 
 
 
-stdio buffering
-===============
+issues
+======
+## stdio buffering
 by default stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
+
+## ttyplot quits and erases screen when there is no more data
+it's by design, you can work around by adding sleep or read, for example:
+```
+{ echo "1 2 3"; sleep 1000; } | ttyplot
+```
+
+## when running interactively and non-numeric data is entered (eg some key) ttyplot hangs
+press `ctrl^j` to re-set 
