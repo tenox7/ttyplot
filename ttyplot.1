@@ -1,0 +1,298 @@
+.Dd May 7, 2019
+.Dt TTYPLOT 1
+.Os
+.Sh NAME
+.Nm ttyplot
+.Nd realtime terminal plotting utility
+.Sh SYNOPSIS
+.Nm
+.Op Ar options
+.Sh DESCRIPTION
+.Nm
+takes data from standard input,
+most commonly some tool like
+.Xr ping 1 ,
+.Xr snmpget 1 ,
+.Xr netstat 8 ,
+.Xr ifconfig 8 ,
+.Xr sar 1 ,
+.Xr vmstat 8 ,
+etc.,
+and plots in text mode on a terminal in real time.
+.Pp
+Supports rate calculation for counters and up to two graphs
+on a single display using reverse video for second line.
+.Pp
+The following options are supported:
+.Bl -tag -width Ds
+.It Fl 2
+Read two values and draw two plots, the second in reverse video.
+.It Fl r
+Calculate counter rate and divide by measured sample interval.
+.It Fl c Ar plotchar
+Use
+.Ar plotchar
+for the plot line, e.g.
+.Ql @ # % \&.
+etc.
+.It Fl e Ar errchar
+Use
+.Ar errchar
+for plot error line when value exceeds max.
+Default:
+.Ql e .
+.It Fl s Ar softmax
+Use
+.Ar softmax
+as the initial maximum value but allow it to grow with input.
+.It Fl m Ar hardmax
+Use
+.Ar hardmax
+as a hard value limit after which an error line will be drawn
+.Po
+see
+.Fl e
+.Pc .
+.It Fl t Ar title
+Use
+.Ar title
+as the plot title.
+.It Fl u Ar unit
+Label the vertical axis
+.Ar unit .
+.El
+.Sh EXAMPLES
+CPU usage from
+.Xr vmstat 8
+using
+.Xr awk 1
+to pick the right column:
+.Bd -literal -offset indent
+vmstat -n 1 \\
+ | gawk '{ print 100-int($(NF-2)); fflush(); }' \\
+ | ttyplot
+.Ed
+.Pp
+CPU usage from
+.Xr sar 1
+with title and fixed scale to 100%:
+.Bd -literal -offset indent
+sar 1 \\
+ | gawk '{ print 100-int($NF); fflush(); }' \\
+ | ttyplot -s 100 -t "cpu usage" -u "%"
+.Ed
+.Pp
+Memory usage from
+.Xr sar 1 ,
+using
+.Xr perl 1 ,
+to pick the right column:
+.Bd -literal -offset indent
+sar -r 1 \\
+ | perl -lane 'BEGIN{$|=1} print "@F[5]"' \\
+ | ttyplot -s 100 -t "memory used %" -u "%"
+.Ed
+.Pp
+Number of processes in running and io blocked state:
+.Bd -literal -offset indent
+vmstat -n 1 \\
+ | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' \\
+ | ttyplot -2 -t "procs in R and D state"
+.Ed
+.Pp
+Load average via
+.Xr uptime 1 and
+.Xr awk 1 :
+.Bd -literal -offset indent
+{ while true; do
+    uptime | gawk '{ gsub(/,/, ""); print $(NF-2) }'
+    sleep 1
+  done } | ttyplot -t "load average" -s load
+.Ed
+.Pp
+Ping plot with
+.Xr sed 1 :
+.Bd -literal -offset indent
+ping 8.8.8.8 \\
+ | sed -u 's/^.*time=//g; s/ ms//g' \\
+ | ttyplot -t "ping to 8.8.8.8" -u ms
+.Ed
+.Pp
+WiFi signal level in -dBM (higher is worse) using
+.Xr iwconfig 8 :
+.Bd -literal -offset indent
+{ while true; do
+    iwconfig 2>/dev/null \\
+     | grep "Signal level" \\
+     | sed -u 's/^.*Signal level=-//g; s/dBm//g'
+    sleep 1
+  done } | ttyplot -t "wifi signal" -u "-dBm" -s 90
+.Ed
+.Pp
+CPU temperature from proc;
+.Bd -literal -offset indent
+{ while true; do
+    awk '{ printf("%.1f\n", $1/1000) }' \\
+         /sys/class/thermal/thermal_zone0/temp
+    sleep 1
+  done } | ttyplot -t "cpu temp" -u C
+.Ed
+.Pp
+Fan speed from
+.Xr sensors 1
+using
+.Xr grep 1 ,
+.Xr tr 1
+and
+.Xr cut 1 :
+.Bd -literal -offset indent
+{ while true; do
+    sensors | grep fan1: | tr -s " " | cut -d" " -f2
+    sleep 1
+  done } | ttyplot -t "fan speed" -u RPM
+.Ed
+.Pp
+Bitcoin price chart using
+.Xr curl 1
+and
+.Xr jq 1 :
+.Bd -literal -offset indent
+{ while true; do
+    curl -sL https://api.coindesk.com/v1/bpi/currentprice.json \\
+     | jq .bpi.USD.rate_float
+    sleep 600
+  done } | ttyplot -t "bitcoin price" -u usd
+.Ed
+.Pp
+Stock quote chart:
+.Bd -literal -offset indent
+{ while true; do
+    curl -sL https://api.iextrading.com/1.0/stock/googl/price
+    echo
+    sleep 600
+  done } | ttyplot -t "google stock price" -u usd
+.Ed
+.Pp
+Prometheus load average via
+.Ic node_exporter :
+.Bd -literal -offset indent
+{ while true; do
+    curl -s  http://10.4.7.180:9100/metrics \\
+     | grep "^node_load1 " \\
+     | cut -d" " -f2; sleep 1
+  done } | ttyplot
+.Ed
+.Ss Network/disk throughput examples
+.Nm
+supports two-line plots for in/out or read/write.
+.Pp
+Local network throughput for all interfaces combined from
+.Xr sar 1 :
+.Bd -literal -offset indent
+sar -n DEV 1 | gawk '{
+  if($6 ~ /rxkB/) {
+     print iin/1000;
+     print out/1000;
+     iin=0;
+     out=0;
+     fflush();
+  }
+  iin=iin+$6;
+  out=out+$7;
+}' | ttyplot -2 -u "MB/s"
+.Ed
+.Pp
+SNMP network throughput for an interface using
+.Ql ttg :
+.Bd -literal -offset indent
+ttg -i 10 -u Mb 10.23.73.254 public 9 \\
+ | gawk '{ print $5,$8; fflush(); }' \\
+ | ttyplot -2 -u Mb/s
+.Ed
+.Pp
+SNMP network throughput for an interface using
+.Xr snmpdelta 1 :
+.Bd -literal -offset indent
+snmpdelta -v 2c -c public -Cp 10 \\
+          10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 \\
+ | gawk '{ print $NF/1000/1000/10; fflush(); }' \\
+ | ttyplot -2 -t "interface 9 throughput" -u Mb/s
+.Ed
+.Pp
+Disk throughput from
+.Xr iostat 1 :
+.Bd -literal -offset indent
+iostat -xmy 1 nvme0n1 \\
+ | stdbuf -o0 tr -s " " \\
+ | stdbuf -o0 cut -d " " -f 4,5 \\
+ | ttyplot -2 -t "nvme0n1 throughput" -u MB/s
+.Ed
+.Ss Rate calculator for counters
+.Nm
+also supports counter style metrics,
+calculating a rate by measuring time difference between samples.
+.Pp
+SNMP network throughput for an interface using
+.Xr snmpget 1 :
+.Bd -literal -offset indent
+{ while true; do
+    snmpget  -v 2c -c public \\
+             10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 \\
+     | awk '{ print $NF/1000/1000; }'
+    sleep 10
+  done } | ttyplot -2 -r -u "MB/s"
+.Ed
+.Pp
+Local interface throughput using
+.Xr ip 8
+and
+.Xr jq 1 :
+.Bd -literal -offset indent
+{ while true; do
+    ip -s -j link show enp0s31f6 \\
+     | jq '.[].stats64.rx.bytes/1024/1024, \\
+           .[].stats64.tx.bytes/1024/1024'
+    sleep 1
+  done } | ttyplot -r -2 -u "MB/s"
+.Ed
+.Pp
+Prometheus node exporter disk throughput for
+.Pa /dev/sda :
+.Bd -literal -offset indent
+{ while true; do
+    curl -s http://10.11.0.173:9100/metrics \\
+     | awk '/^node_disk_.+_bytes_total{device="sda"}/ {
+         printf("%f\n", $2/1024/1024);
+       }'
+    sleep 1
+  done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
+.Ed
+.Sh AUTHORS
+.Nm
+as written by
+.An Antoni Sawicki Aq Mt tenox@google.com .
+.Pp
+Its readme was converted into this manual page by
+.An Sijmen J. Mulder Aq Mt ik@sjmulder.nl .
+.Sh BUGS
+By default in standard in- and output are is buffered.
+This can be worked around in various
+.Lk http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html ways .
+.Pp
+.Nm
+quits and erases the screen when there is no more data.
+This is by design and can be worked around by adding
+.Xr sleep 1
+or
+.Xr read 1 ,
+for example:
+.Pp
+.Dl { echo "1 2 3"; sleep 1000; } | ttyplot
+.Pp
+When running interactively and non-numeric data is entered
+.Pq e.g. some key
+.Nm
+hangs.
+Press
+.Ql Ctrl^J
+to reset.
