@@ -151,13 +151,6 @@ int main(int argc, char *argv[]) {
     int rate=0;
     int two=0;
 
-    initscr();
-
-#ifdef __OpenBSD__
-    if (pledge("stdio tty", NULL) == -1)
-        err(1, "pledge");
-#endif
-
     opterr=0;
     while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
         switch(c) {
@@ -190,6 +183,13 @@ int main(int argc, char *argv[]) {
                 usage();
                 break;
         }
+
+    initscr(); /* uses filesystem, so before pledge */
+
+#ifdef __OpenBSD__
+    if (pledge("stdio tty", NULL) == -1)
+        err(1, "pledge");
+#endif
 
     time(&t1);
     noecho();
