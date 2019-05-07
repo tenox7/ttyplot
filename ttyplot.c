@@ -14,6 +14,10 @@
 #include <curses.h>
 #include <signal.h>
 
+#ifdef __OpenBSD__
+#include <err.h>
+#endif
+
 #define verstring "github.com/tenox7/ttyplot 1.4"
 
 #ifdef NOACS
@@ -147,6 +151,13 @@ int main(int argc, char *argv[]) {
     int rate=0;
     int two=0;
 
+    initscr();
+
+#ifdef __OpenBSD__
+    if (pledge("stdio tty", NULL) == -1)
+        err(1, "pledge");
+#endif
+
     opterr=0;
     while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
         switch(c) {
@@ -181,7 +192,6 @@ int main(int argc, char *argv[]) {
         }
 
     time(&t1);
-    initscr();
     noecho();
     curs_set(FALSE);
     signal(SIGWINCH, (void*)resize);
