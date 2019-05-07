@@ -51,16 +51,15 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
     *max=FLT_MIN;
     tot=FLT_MIN;
 
-    for(i=0; i<pw; i++)
+    for(i=0; i<pw; i++) {
        if(values[i]>*max)
             *max=values[i];
 
-    for(i=0; i<pw; i++)
         if(values[i]<*min)
             *min=values[i];
 
-    for(i=0; i<pw; i++)
         tot=tot+values[i];
+    }
 
     *avg=tot/pw;
 }

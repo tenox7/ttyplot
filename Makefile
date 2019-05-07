@@ -2,15 +2,10 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 
-CFLAGS = -Wall -O3
+CFLAGS += -Wall
+LDLIBS += -lcurses
 
 all: ttyplot
-
-ttyplot: ttyplot.c
-	$(CC) $< -o $@ $(CFLAGS) $(LDFLAGS) -lcurses
-
-torture: torture.c
-	$(CC) $< -o $@ $(CFLAGS) $(LDFLAGS)
 
 install: ttyplot ttyplot.1
 	install -d $(DESTDIR)$(PREFIX)/bin
