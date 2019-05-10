@@ -185,10 +185,10 @@ int main(int argc, char *argv[]) {
 
     initscr(); /* uses filesystem, so before pledge */
 
-#ifdef __OpenBSD__
+    #ifdef __OpenBSD__
     if (pledge("stdio tty", NULL) == -1)
         err(1, "pledge");
-#endif
+    #endif
 
     time(&t1);
     noecho();
