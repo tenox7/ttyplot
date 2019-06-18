@@ -10,7 +10,7 @@ takes data from standard input / unix pipeline, most commonly some tool like *pi
 &nbsp;
 
 
-supports rate calculation for counters and up to two graphs on a single display using reverse video for second line, for example **snmpget**:
+supports rate calculation for counters and up to two graphs on a single display using reverse video for second line, for example **snmpget** or **ip link**:
 
 ![ttyplot snmp](ttyplot-snmp.png)
 
