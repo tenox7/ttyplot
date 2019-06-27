@@ -1,0 +1,16 @@
+Source: ttyplot
+Section: admin
+Priority: optional
+Maintainer: Natalia Portillo <claunia@claunia.com>
+Build-Depends: debhelper (>= 9), libncurses5-dev
+Standards-Version: 3.9.8
+Homepage: https://github.com/tenox7/ttyplot
+Vcs-Git: https://github.com/tenox7/ttyplot
+Vcs-Browser: https://github.com/tenox7/ttyplot
+
+Package: ttyplot
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libncurses-5
+Description: Realtime plotting utility for terminal with data input from stdin
+ Takes data from standard input or a unix pipeline, most commonly some tool like ping, snmpget, netstat, ifconfig, sar, vmstat, etc.
+ and plots in text mode on a terminal in real time.
