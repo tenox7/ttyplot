@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     int two=0;
 
     opterr=0;
-    while((c=getopt(argc, argv, "2rc:C:s:m:t:u:")) != -1)
+    while((c=getopt(argc, argv, "2rc:c:e:s:m:t:u:")) != -1)
         switch(c) {
             case 'r':
                 rate=1;
