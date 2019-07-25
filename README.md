@@ -95,19 +95,14 @@ network/disk throughput examples
 ================================
 ttyplot supports two line plot for in/out or read/write
 
-### local network throughput for all interfaces combined from sar
-```
-sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
-```
-
-### snmp network throughput for an interface using [ttg](https://github.com/tenox7/ttg)
-```
-ttg -i 10 -u Mb 10.23.73.254 public 9 | gawk '{ print $5,$8; fflush(); }' | ttyplot -2 -u Mb/s
-```
-
 ### snmp network throughput for an interface using snmpdelta
 ```
 snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -2 -t "interface 9 throughput" -u Mb/s
+```
+
+### local network throughput for all interfaces combined from sar
+```
+sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
 ```
 
 ### disk throughput from iostat
@@ -122,7 +117,7 @@ iostat -xmy 1 nvme0n1 | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d " " -f 4,5 | tt
 
 rate calculator for counters
 ============================
-ttyplot also supports "counter" style metrics, calculating "rate" by measureing time difference between samples
+ttyplot also supports *counter* style metrics, calculating *rate* by measured time difference between samples
 
 ### snmp network throughput for an interface using snmpget
 ```
@@ -148,23 +143,16 @@ options
 =======
 
 ```
-ttyplot [-2] [-r] [-c plotchar] [-e errchar] [-s softmax] [-m hardmax] [-t title] [-u unit]
+  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]
 
--2 read two values and draw two plots, the second one is in reverse video
-
--r calculate counter rate and divide by measured sample interval
-
--c character to use for plot line, eg @ # % . etc
-
--e character to use for plot error line when value exceeds max (default: e)
-
--s softmax is an initial maximum value that can grow if data input has larger value
-
--m hardmax is a hard maximum value, if exceeded error line will be drawn (see -e)
-
--t title of the plot
-
--u unit displayed beside vertical bar
+  -2 read two values and draw two plots, the second one is in reverse video
+  -r rate of a counter (divide value by measured sample interval)
+  -c character to use for plot line, eg @ # % . etc
+  -e character to use for plot error line when value exceeds hardmax (default: e)
+  -s minimum/initial scale of the plot (can go above if data input has larger value)
+  -m maximum value, if exceeded draws error line (see -e), plot scale is fixed
+  -t title of the plot
+  -u unit displayed beside vertical bar
 ```
 
 &nbsp;

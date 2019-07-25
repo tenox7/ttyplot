@@ -35,15 +35,15 @@
 #endif
 
 void usage() {
-    printf("Usage:\n ttyplot [-2] [-r] [-c plotchar] [-s softmax] [-m hardmax] [-t title] [-u unit]\n\n"
-            "-2 read two values and draw two plots, the second one is in reverse video\n"
-            "-r calculate counter rate and divide by measured sample interval\n"
-            "-c character to use for plot line, eg @ # %% . etc\n"
-            "-e character to use for plot error line when value exceeds hardmax (default: e)\n"
-            "-s softmax is an initial maximum value that can grow if data input has larger value\n"
-            "-m hardmax is a hard maximum value, if exceeded error line will be drawn (see -e)\n"
-            "-t title of the plot\n"
-            "-u unit displayed beside vertical bar\n\n");
+    printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]\n\n"
+            "  -2 read two values and draw two plots, the second one is in reverse video\n"
+            "  -r rate of a counter (divide value by measured sample interval)\n"
+            "  -c character to use for plot line, eg @ # %% . etc\n"
+            "  -e character to use for plot error line when value exceeds hardmax (default: e)\n"
+            "  -s minimum/initial scale of the plot (can go above if data input has larger value)\n"
+            "  -m maximum value, if exceeded draws error line (see -e), plot scale is fixed\n"
+            "  -t title of the plot\n"
+            "  -u unit displayed beside vertical bar\n\n");
     exit(0);
 }
 
