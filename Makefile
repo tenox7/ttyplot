@@ -2,7 +2,7 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 
-CFLAGS += -Wall
+CFLAGS += -Wall -Wextra
 LDLIBS += -lcurses
 
 all: ttyplot
