@@ -39,8 +39,8 @@ void usage() {
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
             "  -r rate of a counter (divide value by measured sample interval)\n"
             "  -c character to use for plot line, eg @ # %% . etc\n"
-            "  -e character to use for plot error line when value exceeds hardmax (default: e)\n"
-            "  -s minimum/initial scale of the plot (can go above if data input has larger value)\n"
+            "  -e character to use for error line when value exceeds hardmax (default: e)\n"
+            "  -s initial scale of the plot (can go above if data input has larger value)\n"
             "  -m maximum value, if exceeded draws error line (see -e), plot scale is fixed\n"
             "  -t title of the plot\n"
             "  -u unit displayed beside vertical bar\n\n");
