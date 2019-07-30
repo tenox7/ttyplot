@@ -47,7 +47,7 @@ void usage() {
     exit(0);
 }
 
-void getminmax(int pw, int n, double *values, double *min, double *max, double *avg) {
+void getminmax(int pw, double *values, double *min, double *max, double *avg) {
     double tot=0;
     int i=0;
 
@@ -68,7 +68,7 @@ void getminmax(int pw, int n, double *values, double *min, double *max, double *
     *avg=tot/pw;
 }
 
-void draw_axes(int h, int w, int ph, int pw, double max, char *unit) {
+void draw_axes(int h, int ph, int pw, double max, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
     mvprintw(1, 4, "%.1f %s", max, unit);
@@ -92,7 +92,7 @@ void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype ce) {
     }
 }
 
-void plot_values(int h, int w, int ph, int pw, double *v1, double *v2, double max, int n, chtype pc, chtype ce, double hm) {
+void plot_values(int ph, int pw, double *v1, double *v2, double max, int n, chtype pc, chtype ce, double hm) {
     int i;
     int x=3;
 
@@ -113,12 +113,12 @@ void plot_values(int h, int w, int ph, int pw, double *v1, double *v2, double ma
                   ce);
 }
 
-void resize(int sig) {
+void resize() {
     endwin();
     refresh();
 }
 
-void finish(int sig) {
+void finish() {
     curs_set(FALSE);
     echo();
     refresh();
@@ -271,11 +271,11 @@ int main(int argc, char *argv[]) {
         #endif
         plotheight=height-4;
         plotwidth=width-4;
-        if(plotwidth>=(sizeof(values1)/sizeof(double))-1)
+        if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
             return 0;
 
-        getminmax(plotwidth, n, values1, &min1, &max1, &avg1);
-        getminmax(plotwidth, n, values2, &min2, &max2, &avg2);
+        getminmax(plotwidth, values1, &min1, &max1, &avg1);
+        getminmax(plotwidth, values2, &min2, &max2, &avg2);
 
         if(max1>max2)
             max=max1;
@@ -311,13 +311,13 @@ int main(int argc, char *argv[]) {
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
 
-        plot_values(height, width, plotheight, plotwidth, values1, values2, max, n, plotchar, errchar, hardmax);
+        plot_values(plotheight, plotwidth, values1, values2, max, n, plotchar, errchar, hardmax);
 
-        draw_axes(height, width, plotheight, plotwidth, max, unit);
+        draw_axes(height, plotheight, plotwidth, max, unit);
 
         mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
 
-        if(n<(plotwidth)-1)
+        if(n<(int)((plotwidth)-1))
             n++;
         else
             n=0;
