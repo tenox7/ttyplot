@@ -1,0 +1,31 @@
+name: ttyplot
+version: 1.5
+summary: realtime plotting utility for terminal/console with data input from stdin
+description: |
+  takes data from standard input / unix pipeline, 
+  most commonly some tool like ping, snmpget, 
+  netstat, ifconfig, ip, sar, vmstat, etc. and
+  plots in text mode on a terminal in real time,
+  supports rate calculation for counters and up to
+  two graphs on a single display using reverse
+  video for second line
+
+confinement: devmode
+
+parts:
+  ttyplot:
+    plugin: make
+    source-type: git
+    source: https://github.com/tenox7/ttyplot.git
+    build-packages:
+      - gcc
+      - make
+      - libncurses5-dev
+      - libtinfo-dev
+    stage-packages:
+      - libncurses5
+      - libtinfo5
+
+apps:
+  ttyplot:
+    command: usr/local/bin/ttyplot
