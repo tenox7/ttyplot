@@ -18,8 +18,8 @@ supports rate calculation for counters and up to two graphs on a single display 
 &nbsp;
 &nbsp;
 
-download
-========
+get
+===
 
 ```
 snap install ttyplot
@@ -27,8 +27,8 @@ snap install ttyplot
 
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
 
-usage examples
-==============
+examples
+========
 
 ### cpu usage from vmstat using awk to pick the right column
 ```
