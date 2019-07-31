@@ -20,7 +20,12 @@ supports rate calculation for counters and up to two graphs on a single display 
 
 download
 ========
-see [releases tab](https://github.com/tenox7/ttyplot/releases)
+
+```
+snap install ttyplot
+```
+
+for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
 
 usage examples
 ==============
