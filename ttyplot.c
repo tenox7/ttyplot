@@ -34,6 +34,9 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
+/* global because we need it accessible in the signal handler */
+SCREEN *sp;
+
 void usage() {
     printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]\n\n"
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
@@ -123,6 +126,7 @@ void finish() {
     echo();
     refresh();
     endwin();
+    delscreen(sp);
     exit(0);
 }
 
@@ -183,7 +187,7 @@ int main(int argc, char *argv[]) {
                 break;
         }
 
-    initscr(); /* uses filesystem, so before pledge */
+    sp = newterm("linux", stdout, stdin);
 
     #ifdef __OpenBSD__
     if (pledge("stdio tty", NULL) == -1)
@@ -327,5 +331,6 @@ int main(int argc, char *argv[]) {
     }
 
     endwin();
+    delscreen(sp);
     return 0;
 }
