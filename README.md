@@ -171,9 +171,11 @@ issues
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
 
 ### ttyplot quits when tere is no more data
-it's by design, you can work around by adding sleep or read:
+it's by design, you can work around by adding sleep, read or cat:
 
-{ echo 1 2 3; sleep 60; } | ttyplot
+```
+{ echo 1 2 3; cat; } | ttyplot
+```
 
 ### ttyplot erases screen when exiting
 it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite), likely this will work around it:
