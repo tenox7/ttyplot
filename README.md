@@ -170,14 +170,19 @@ issues
 ### stdio buffering
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
 
-### ttyplot quits and erases screen when there is no more data
+### ttyplot quits when tere is no more data
+it's by design, you can work around by adding sleep or read:
+
+{ echo 1 2 3; sleep 60; } | ttyplot
+
+### ttyplot erases screen when exiting
 it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite), likely this will work around it:
 
 ```
-seq 10 | TERM=vt100 ttyplot
+echo 1 2 3 | TERM=vt100 ttyplot
 ```
 
-you can also patch your terminfo to disable alternate screen:
+you can also fix your broken terminfo:
 
 ```
 infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
