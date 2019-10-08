@@ -171,15 +171,13 @@ issues
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
 
 ### ttyplot quits and erases screen when there is no more data
-it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite), 
-
-in most this will do what you want:
+it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite), likely this will work around it:
 
 ```
 seq 10 | TERM=vt100 ttyplot
 ```
 
-you can also patch your terminfo to disable alternate screen as follows:
+you can also patch your terminfo to disable alternate screen:
 
 ```
 infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
