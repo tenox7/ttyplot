@@ -178,7 +178,7 @@ it's by design, you can work around by adding sleep, read or cat:
 ```
 
 ### ttyplot erases screen when exiting
-it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite), likely this will work around it:
+it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite) in xterm-ish terminals, if you use one of these this will likely work around it:
 
 ```
 echo 1 2 3 | TERM=vt100 ttyplot
