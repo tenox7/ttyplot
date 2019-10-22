@@ -21,8 +21,16 @@ supports rate calculation for counters and up to two graphs on a single display 
 get
 ===
 
+ubuntu
+
 ```
 snap install ttyplot
+```
+
+macOS
+
+```
+brew install ttyplot
 ```
 
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
