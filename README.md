@@ -192,7 +192,7 @@ it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.
 echo 1 2 3 | TERM=vt100 ttyplot
 ```
 
-you can also fix your broken terminfo:
+you can also permanently fix broken terminfo:
 
 ```
 infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
