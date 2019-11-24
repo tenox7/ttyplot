@@ -162,7 +162,7 @@ options
   -r rate of a counter (divide value by measured sample interval)
   -c character to use for plot line, eg @ # % . etc
   -e character to use for plot error line when value exceeds hardmax (default: e)
-  -s minimum/initial scale of the plot (can go above if data input has larger value)
+  -s initial scale of the plot (can go above if data input has larger value)
   -m maximum value, if exceeded draws error line (see -e), plot scale is fixed
   -t title of the plot
   -u unit displayed beside vertical bar
