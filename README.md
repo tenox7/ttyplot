@@ -201,7 +201,7 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 ### when running interactively and non-numeric data is entered (eg some key) ttyplot hangs
 press `ctrl^j` to re-set 
 
-## Legal Stuff
+## legal stuff
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
 Copyright (c) 2019-2020 Google LLC
