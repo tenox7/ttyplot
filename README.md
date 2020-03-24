@@ -134,7 +134,7 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 
 ### snmp network throughput for an interface using snmpget
 ```
-{ while true; do snmpget  -v 2c -c public  10.23.73.254  1.3.6.1.2.1.2.2.1.{10,16}.9 | awk '{ print $NF/1000/1000; }'; sleep 10; done } | ttyplot -2 -r -u "MB/s"
+{ while true; do snmpget -v 2c -c public 10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 | awk '{ print $NF/1000/1000; }'; sleep 10; done } | ttyplot -2 -r -u "MB/s"
 ```
 
 ### local interface throughput using ip link and jq
