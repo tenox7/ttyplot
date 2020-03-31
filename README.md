@@ -83,6 +83,11 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do sensors | grep fan1: | tr -s " " | cut -d" " -f2; sleep 1; done } | ttyplot -t "fan speed" -u RPM
 ```
 
+### memory usage from rrdtool and collectd using awk
+```
+{ while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/memory/memory-used.rrd | awk 'END { print ($NF)/1024/1024 }'; sleep 1; done } | ttyplot -m $(awk '/MemTotal/ { print ($2)/1024 }' /proc/meminfo) -t "Memoru Used" -u MB
+```
+
 ### bitcoin price chart using curl and jq
 ```
 { while true; do curl -sL https://api.coindesk.com/v1/bpi/currentprice.json  | jq .bpi.USD.rate_float; sleep 600; done } | ttyplot -t "bitcoin price" -u usd
