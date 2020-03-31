@@ -181,7 +181,7 @@ options
 issues
 ======
 ### stdio buffering
-by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) 
+by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
 
 ### ttyplot quits when tere is no more data
 it's by design, you can work around by adding sleep, read or cat:
