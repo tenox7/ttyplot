@@ -152,6 +152,10 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 { while true; do curl -s http://10.11.0.173:9100/metrics | awk '/^node_disk_.+_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); }'; sleep 1; done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
 ```
 
+### network throughput from collectd with rrdtool and awk
+```
+{ while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/interface-enp1s0/if_octets.rrd | awk 'END { print ($2)/1000/1000, ($3)/1000/1000 }'; sleep 10; done } | ttyplot -2 -r -t "enp1s0 throughput" -u MB/s
+```
 
 &nbsp;
 &nbsp;
