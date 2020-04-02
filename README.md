@@ -161,8 +161,8 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 &nbsp;
 
 
-options
-=======
+flags
+=====
 
 ```
   ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]
