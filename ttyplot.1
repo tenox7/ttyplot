@@ -35,12 +35,18 @@ Use
 for the plot line, e.g.
 .Ql @ # % \&.
 etc.
-.It Fl e Ar errchar
+.It Fl e Ar errcharmax
 Use
-.Ar errchar
-for plot error line when value exceeds max.
+.Ar errcharmax
+for plot error line when value exceeds hardmax.
 Default:
 .Ql e .
+.It Fl E Ar errcharmin
+Use
+.Ar errcharmin
+for plot error symbol, displayed when plot value is less than hardmin.
+Default:
+.Ql v .
 .It Fl s Ar softmax
 Use
 .Ar softmax
@@ -52,6 +58,14 @@ as a hard value limit after which an error line will be drawn
 .Po
 see
 .Fl e
+.Pc . Should be greater than hardmin, if set.
+.It Fl M Ar hardmin
+Use
+.Ar hardmin
+as a definite minimum limit of the plot range. If a plot value is less than this, error symbol will be drawn
+.Po
+see
+.Fl E
 .Pc .
 .It Fl t Ar title
 Use
