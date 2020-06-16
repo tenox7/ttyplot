@@ -212,6 +212,8 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 press `ctrl^j` to re-set 
 
 ## legal stuff
+```
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
 Copyright (c) 2019-2020 Google LLC
+```
