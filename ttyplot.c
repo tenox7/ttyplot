@@ -47,7 +47,7 @@ void usage() {
     exit(0);
 }
 
-void getminmax(int pw, double *values, double *min, double *max, double *avg) {
+void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
     double tot=0;
     int i=0;
 
@@ -55,7 +55,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg) {
     *max=FLT_MIN;
     tot=FLT_MIN;
 
-    for(i=0; i<pw; i++) {
+    for(i=0; i<pw && i<v; i++) {
        if(values[i]>*max)
             *max=values[i];
 
@@ -65,7 +65,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg) {
         tot=tot+values[i];
     }
 
-    *avg=tot/pw;
+    *avg=tot/i;
 }
 
 void draw_axes(int h, int ph, int pw, double max, char *unit) {
@@ -135,6 +135,7 @@ int main(int argc, char *argv[]) {
     double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
     int n=0;
     int r=0;
+    int v=0;
     int width=0, height=0;
     int plotwidth=0, plotheight=0;
     time_t t1,t2,td;
@@ -212,6 +213,7 @@ int main(int argc, char *argv[]) {
             r=scanf("%lf %lf", &values1[n], &values2[n]);
         else
             r=scanf("%lf", &values1[n]);
+        v++;
         if(r==0) {
             while(getchar()!='\n');
             continue;
@@ -274,8 +276,8 @@ int main(int argc, char *argv[]) {
         if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
             return 0;
 
-        getminmax(plotwidth, values1, &min1, &max1, &avg1);
-        getminmax(plotwidth, values2, &min2, &max2, &avg2);
+        getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
+        getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
 
         if(max1>max2)
             max=max1;
