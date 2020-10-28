@@ -53,6 +53,11 @@ sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage"
 sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory used %" -u "%"
 ```
 
+### memory usage on macOS
+```
+vm_stat 1 | awk '{ print int($2)*4096/1024/1024/1024; fflush(); }' | ttyplot -t "MacOS Memory Usage" -u GB
+```
+
 ### number of processes in running and io blocked state
 ```
 vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -2 -t "procs in R and D state"
