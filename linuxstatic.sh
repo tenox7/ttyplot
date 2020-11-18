@@ -1,3 +1,4 @@
+#!/bin/bash -xe
 # overcomplicated method of building static version of ttyplot for linux
 docker rmi -f static
 cat <<EOF | docker build -t static  -f- .
