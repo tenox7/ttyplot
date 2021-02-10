@@ -1,9 +1,10 @@
 DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
-
 CFLAGS += -Wall -Wextra
 LDLIBS += -lcurses
+PKG = ttyplot_1.4-1
+PKGDIR = $(PKG)/usr/local/bin
 
 all: ttyplot
 
@@ -17,7 +18,12 @@ uninstall:
 	rm -f $(PREFIX)$(PREFIX)/bin/ttyplot
 	rm -f $(PREFIX)$(MANPREFIX)/man1/ttyplot.1
 
+deb: ttyplot
+	mkdir -p $(PKGDIR)
+	cp ttyplot $(PKGDIR)
+	dpkg-deb --build $(PKG)
+
 clean:
-	rm -f ttyplot torture
+	rm -f ttyplot torture $(PKGDIR)/*
 
 .PHONY: all clean install uninstall

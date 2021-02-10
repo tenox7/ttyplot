@@ -1,0 +1,12 @@
+Package: ttyplot
+Version: 1.4-1
+Section: base
+Priority: optional
+Maintainer: Antoni Sawicki <as@tenoware.com>
+Homepage: https://github.com/tenox7/ttyplot
+Architecture: amd64
+Depends: libncurses5
+Description: Realtime plotting utility for terminal with data input from stdin
+ Takes data from standard input or a unix pipeline, most commonly some tool
+ like ping, snmpget, netstat, ifconfig, sar, vmstat, etc.
+ and plots in text mode on a terminal in real time.

@@ -27,6 +27,11 @@ ubuntu
 snap install ttyplot
 ```
 
+debian
+```
+curl -LO https://github.com/tenox7/ttyplot/releases/download/1.4/ttyplot_1.4-1.deb && sudo apt install ./ttyplot_1.4-1.deb
+```
+
 macOS
 
 ```
