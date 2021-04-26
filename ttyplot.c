@@ -35,13 +35,15 @@
 #endif
 
 void usage() {
-    printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]\n\n"
+    printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n\n"
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
             "  -r rate of a counter (divide value by measured sample interval)\n"
             "  -c character to use for plot line, eg @ # %% . etc\n"
             "  -e character to use for error line when value exceeds hardmax (default: e)\n"
+            "  -E character to use for error symbol displayed when value is less than hardmin (default: v)\n"
             "  -s initial scale of the plot (can go above if data input has larger value)\n"
-            "  -m maximum value, if exceeded draws error line (see -e), plot scale is fixed\n"
+            "  -m maximum value, if exceeded draws error line (see -e), upper-limit of plot scale is fixed\n"
+            "  -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed\n"
             "  -t title of the plot\n"
             "  -u unit displayed beside vertical bar\n\n");
     exit(0);
@@ -68,49 +70,50 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     *avg=tot/i;
 }
 
-void draw_axes(int h, int ph, int pw, double max, char *unit) {
+void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
     mvprintw(1, 4, "%.1f %s", max, unit);
-    mvprintw((ph/4)+1, 4, "%.1f %s", max*3/4, unit);
-    mvprintw((ph/2)+1, 4, "%.1f %s", max/2, unit);
-    mvprintw((ph*3/4)+1, 4, "%.1f %s", max/4, unit);
+    mvprintw((ph/4)+1, 4, "%.1f %s", min/4 + max*3/4, unit);
+    mvprintw((ph/2)+1, 4, "%.1f %s", min/2 + max/2, unit);
+    mvprintw((ph*3/4)+1, 4, "%.1f %s", min*3/4 + max/4, unit);
     mvaddch(h-3, 2+pw, T_RARR);
     mvaddch(1, 2, T_UARR);
     mvaddch(h-3, 2, T_LLCR);
 }
 
-void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype ce) {
+void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype hce, chtype lce) {
     if(l1 > l2) {
         mvvline(ph+1-l1, x, c1, l1-l2 );
         mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
     } else if(l1 < l2) {
-        mvvline(ph+1-l2, x, (c2==ce) ? c2|A_REVERSE : ' '|A_REVERSE,  l2-l1 );
+        mvvline(ph+1-l2, x, (c2==hce || c2==lce) ? c2|A_REVERSE : ' '|A_REVERSE,  l2-l1 );
         mvvline(ph+1-l1, x, c1|A_REVERSE, l1 );
     } else {
         mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
     }
 }
 
-void plot_values(int ph, int pw, double *v1, double *v2, double max, int n, chtype pc, chtype ce, double hm) {
+void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, chtype pc, chtype hce, chtype lce, double hm) {
     int i;
     int x=3;
+    max-=min;
 
     for(i=n+1; i<pw; i++)
         draw_line(x++, ph,
-                  (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph),
-                  (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph),
-                  (v1[i]>hm) ? ce : pc,
-                  (v2[i]>hm) ? ce : pc,
-                  ce);
+                  (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
+                  (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
+                  (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
+                  (v2[i]>hm) ? hce : (v2[i]<min) ? lce : pc,
+                  hce, lce);
 
     for(i=0; i<=n; i++)
         draw_line(x++, ph,
-                  (v1[i]>hm) ? ph : (int)((v1[i]/max)*(double)ph),
-                  (v2[i]>hm) ? ph : (int)((v2[i]/max)*(double)ph),
-                  (v1[i]>hm) ? ce : pc,
-                  (v2[i]>hm) ? ce : pc,
-                  ce);
+                  (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
+                  (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
+                  (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
+                  (v2[i]>hm) ? hce : (v2[i]<min) ? lce : pc,
+                  hce, lce);
 }
 
 void resize() {
@@ -141,10 +144,11 @@ int main(int argc, char *argv[]) {
     time_t t1,t2,td;
     struct tm *lt;
     int c;
-    chtype plotchar=T_VLINE, errchar='e';
+    chtype plotchar=T_VLINE, max_errchar='e', min_errchar='v';
     double max=FLT_MIN;
     double softmax=FLT_MIN;
     double hardmax=FLT_MAX;
+    double hardmin=0.0;
     char title[256]=".: ttyplot :.";
     char unit[64]={0};
     char ls[256]={0};
@@ -152,7 +156,7 @@ int main(int argc, char *argv[]) {
     int two=0;
 
     opterr=0;
-    while((c=getopt(argc, argv, "2rc:c:e:s:m:t:u:")) != -1)
+    while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
         switch(c) {
             case 'r':
                 rate=1;
@@ -165,13 +169,24 @@ int main(int argc, char *argv[]) {
                 plotchar=optarg[0];
                 break;
             case 'e':
-                errchar=optarg[0];
+                max_errchar=optarg[0];
+                break;
+            case 'E':
+                min_errchar=optarg[0];
                 break;
             case 's':
                 softmax=atof(optarg);
                 break;
             case 'm':
                 hardmax=atof(optarg);
+                break;
+            case 'M':
+                hardmin=atof(optarg);
+                int i;
+                for(i=0;i<1024;i++){
+                    values1[i]=hardmin;
+                    values2[i]=hardmin;
+                }
                 break;
             case 't':
                 snprintf(title, sizeof(title), "%s", optarg);
@@ -183,6 +198,11 @@ int main(int argc, char *argv[]) {
                 usage();
                 break;
         }
+
+    if(softmax <= hardmin)
+        softmax = hardmin + 1;
+    if(hardmax <= hardmin)
+        hardmax = FLT_MAX;
 
     initscr(); /* uses filesystem, so before pledge */
 
@@ -313,9 +333,9 @@ int main(int argc, char *argv[]) {
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
 
-        plot_values(plotheight, plotwidth, values1, values2, max, n, plotchar, errchar, hardmax);
+        plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
 
-        draw_axes(height, plotheight, plotwidth, max, unit);
+        draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
         mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
 

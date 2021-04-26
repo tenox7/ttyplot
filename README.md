@@ -176,14 +176,16 @@ flags
 =====
 
 ```
-  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-t title] [-u unit]
+  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
 
   -2 read two values and draw two plots, the second one is in reverse video
   -r rate of a counter (divide value by measured sample interval)
   -c character to use for plot line, eg @ # % . etc
   -e character to use for plot error line when value exceeds hardmax (default: e)
+  -E character to use for error symbol displayed when value is less than hardmin (default: v)
   -s initial scale of the plot (can go above if data input has larger value)
-  -m maximum value, if exceeded draws error line (see -e), plot scale is fixed
+  -m maximum value, if exceeded draws error line (see -e), upper-limit of plot scale is fixed
+  -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed
   -t title of the plot
   -u unit displayed beside vertical bar
 ```
