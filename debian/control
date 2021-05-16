@@ -1,11 +1,15 @@
-Package: ttyplot
-Version: 1.4-1
+Source: ttyplot
 Section: base
 Priority: optional
 Maintainer: Antoni Sawicki <as@tenoware.com>
+Build-Depends: debhelper (>=9), libncurses-dev, libtinfo-dev
+Standards-Version: 3.9.8
 Homepage: https://github.com/tenox7/ttyplot
-Architecture: amd64
-Depends: libncurses5
+
+Package: ttyplot
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Realtime plotting utility for terminal with data input from stdin
  Takes data from standard input or a unix pipeline, most commonly some tool
  like ping, snmpget, netstat, ifconfig, sar, vmstat, etc.
