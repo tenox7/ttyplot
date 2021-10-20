@@ -1,6 +1,5 @@
-ttyplot
-=======
-a realtime plotting utility for terminal with data input from stdin / pipe
+# ttyplot
+a realtime plotting utility for text mode consoles and terminals with data input from stdin / pipe
 
 takes data from standard input / unix pipeline, most commonly some tool like *ping, snmpget, netstat, ip link, ifconfig, sar, vmstat*, etc. and plots in text mode on a terminal in real time, for example a simple **ping**:
 
@@ -18,8 +17,7 @@ supports rate calculation for counters and up to two graphs on a single display 
 &nbsp;
 &nbsp;
 
-get
-===
+## get
 
 ubuntu
 
@@ -40,8 +38,7 @@ brew install ttyplot
 
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
 
-examples
-========
+## examples
 
 ### cpu usage from vmstat using awk to pick the right column
 ```
@@ -125,9 +122,8 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 
 
 
-network/disk throughput examples
-================================
-ttyplot supports two line plot for in/out or read/write
+## network/disk throughput examples
+ttyplot supports "two line" plot for in/out or read/write
 
 ### snmp network throughput for an interface using snmpdelta
 ```
@@ -149,8 +145,7 @@ iostat -xmy 1 nvme0n1 | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d " " -f 4,5 | tt
 
 
 
-rate calculator for counters
-============================
+## rate calculator for counters
 ttyplot also supports *counter* style metrics, calculating *rate* by measured time difference between samples
 
 ### snmp network throughput for an interface using snmpget
@@ -177,8 +172,7 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 &nbsp;
 
 
-flags
-=====
+## flags
 
 ```
   ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
@@ -200,20 +194,19 @@ flags
 
 
 
-issues
-======
+## frequently questioned answers
 ### stdio buffering
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
 
-### ttyplot quits when tere is no more data
-it's by design, you can work around by adding sleep, read or cat:
+### ttyplot quits when there is no more data
+it's by design, you can work around by adding `sleep`, `read`, `cat`, etc:
 
 ```
 { echo 1 2 3; cat; } | ttyplot
 ```
 
 ### ttyplot erases screen when exiting
-it's because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite) in xterm-ish terminals, if you use one of these this will likely work around it:
+this is because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite) in xterm-ish terminals; if you use one of these this will likely work around it:
 
 ```
 echo 1 2 3 | TERM=vt100 ttyplot
@@ -225,12 +218,12 @@ you can also permanently fix terminfo entry (this will make a copy in $HOME/.ter
 infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 ```
 
-### when running interactively and non-numeric data is entered (eg some key) ttyplot hangs
+### when running interactively and non-numeric data is entered (eg. some key) ttyplot hangs
 press `ctrl^j` to re-set 
 
 ## legal stuff
 ```
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
-Copyright (c) 2019-2020 Google LLC
+Copyright (c) 2019-2021 Google LLC
 ```
