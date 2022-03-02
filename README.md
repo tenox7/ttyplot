@@ -19,13 +19,13 @@ supports rate calculation for counters and up to two graphs on a single display 
 
 ## get
 
-ubuntu
+### ubuntu
 
 ```
 snap install ttyplot
 ```
 
-debian
+### debian
 
 maybe
 
@@ -41,11 +41,13 @@ or
 curl -LO https://github.com/tenox7/ttyplot/releases/download/1.4/ttyplot_1.4-1.deb && sudo apt install ./ttyplot_1.4-1.deb
 ```
 
-macOS
+### macOS
 
 ```
 brew install ttyplot
 ```
+
+### misc
 
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
 
