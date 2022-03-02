@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
         #endif
         mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
         if(rate)
-            printw(" interval=%ds", td);
+            printw(" interval=%llds", (long long int)td);
 
         if(two) {
             mvaddch(height-1, 5, ' '|A_REVERSE);
