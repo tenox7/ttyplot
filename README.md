@@ -26,6 +26,17 @@ snap install ttyplot
 ```
 
 debian
+
+maybe
+
+```
+apt install ttyplot
+```
+
+[package](https://packages.debian.org/sid/ttyplot) | [tracker](https://tracker.debian.org/pkg/ttyplot)
+
+or
+
 ```
 curl -LO https://github.com/tenox7/ttyplot/releases/download/1.4/ttyplot_1.4-1.deb && sudo apt install ./ttyplot_1.4-1.deb
 ```
