@@ -19,6 +19,10 @@ supports rate calculation for counters and up to two graphs on a single display 
 
 ## get
 
+<a href="https://repology.org/project/ttyplot/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/ttyplot.svg" alt="Packaging status" align="right">
+</a>
+
 ### ubuntu
 
 ```
@@ -45,6 +49,12 @@ curl -LO https://github.com/tenox7/ttyplot/releases/download/1.4/ttyplot_1.4-1.d
 
 ```
 brew install ttyplot
+```
+
+### termux
+
+```
+pkg install ttyplot
 ```
 
 ### misc
@@ -232,7 +242,7 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 ```
 
 ### when running interactively and non-numeric data is entered (eg. some key) ttyplot hangs
-press `ctrl^j` to re-set 
+press `ctrl^j` to re-set
 
 ## legal stuff
 ```
