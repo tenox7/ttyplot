@@ -33,7 +33,9 @@ maybe
 apt install ttyplot
 ```
 
-[Download Packages](https://packages.debian.org/sid/ttyplot) | [Tracker](https://tracker.debian.org/pkg/ttyplot)
+[Download Packages](https://packages.debian.org/sid/ttyplot) 
+
+[Tracker](https://tracker.debian.org/pkg/ttyplot)
 
 ### macOS
 
