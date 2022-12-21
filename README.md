@@ -208,7 +208,9 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
 
 ### ttyplot quits when there is no more data
-it's by design, you can work around by adding `sleep`, `read`, `cat`, etc:
+this is by design; your problem is likely that the output is lost when ttyplot quits; this is explained in the next question below
+
+you can also "work around" by adding `sleep`, `read`, `cat`, etc:
 
 ```
 { echo 1 2 3; cat; } | ttyplot
