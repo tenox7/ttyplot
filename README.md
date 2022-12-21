@@ -19,6 +19,10 @@ supports rate calculation for counters and up to two graphs on a single display 
 
 ## get
 
+<a href="https://repology.org/project/ttyplot/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/ttyplot.svg" alt="Packaging status" align="right">
+</a>
+
 ### ubuntu
 
 ```
@@ -41,6 +45,12 @@ alternatively [download packages](https://packages.debian.org/sid/ttyplot)
 
 ```
 brew install ttyplot
+```
+
+### termux
+
+```
+pkg install ttyplot
 ```
 
 ### misc
@@ -228,7 +238,7 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 ```
 
 ### when running interactively and non-numeric data is entered (eg. some key) ttyplot hangs
-press `ctrl^j` to re-set 
+press `ctrl^j` to re-set
 
 ### stdio buffering
 by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
