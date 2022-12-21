@@ -19,6 +19,10 @@ supports rate calculation for counters and up to two graphs on a single display 
 
 ## get
 
+<a href="https://repology.org/project/ttyplot/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/ttyplot.svg" alt="Packaging status" align="right">
+</a>
+
 ### ubuntu
 
 ```
@@ -27,20 +31,26 @@ snap install ttyplot
 
 ### debian
 
-maybe
+you can try
 
 ```
 apt install ttyplot
 ```
 
-[Download Packages](https://packages.debian.org/sid/ttyplot) 
+alternatively [download packages](https://packages.debian.org/sid/ttyplot) 
 
-[Tracker](https://tracker.debian.org/pkg/ttyplot)
+[debian tracker](https://tracker.debian.org/pkg/ttyplot)
 
 ### macOS
 
 ```
 brew install ttyplot
+```
+
+### termux
+
+```
+pkg install ttyplot
 ```
 
 ### misc
@@ -204,11 +214,11 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 
 
 ## frequently questioned answers
-### stdio buffering
-by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
 
 ### ttyplot quits when there is no more data
-it's by design, you can work around by adding `sleep`, `read`, `cat`, etc:
+this is by design; your problem is likely that the output is lost when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting)
+
+you can also "work around" by adding `sleep`, `read`, `cat` at the end of the stream, etc:
 
 ```
 { echo 1 2 3; cat; } | ttyplot
@@ -228,7 +238,11 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 ```
 
 ### when running interactively and non-numeric data is entered (eg. some key) ttyplot hangs
-press `ctrl^j` to re-set 
+press `ctrl^j` to re-set
+
+### stdio buffering
+by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
+
 
 ## legal stuff
 ```
