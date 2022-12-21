@@ -233,13 +233,17 @@ int main(int argc, char *argv[]) {
             r=scanf("%lf %lf", &values1[n], &values2[n]);
         else
             r=scanf("%lf", &values1[n]);
+
         v++;
+
         if(r==0) {
             while(getchar()!='\n');
             continue;
         }
         else if(r<0) {
-            break;
+            mvprintw(height/2, (width/2)-10, "input stream closed");
+            refresh();
+            pause();
         }
 
         if(values1[n] < 0)
