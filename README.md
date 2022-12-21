@@ -204,13 +204,11 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 
 
 ## frequently questioned answers
-### stdio buffering
-by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
 
 ### ttyplot quits when there is no more data
-this is by design; your problem is likely that the output is lost when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting))
+this is by design; your problem is likely that the output is lost when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting)
 
-you can also "work around" by adding `sleep`, `read`, `cat`, etc:
+you can also "work around" by adding `sleep`, `read`, `cat` at the end of the stream, etc:
 
 ```
 { echo 1 2 3; cat; } | ttyplot
@@ -231,6 +229,10 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 
 ### when running interactively and non-numeric data is entered (eg. some key) ttyplot hangs
 press `ctrl^j` to re-set 
+
+### stdio buffering
+by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
+
 
 ## legal stuff
 ```
