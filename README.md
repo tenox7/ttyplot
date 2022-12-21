@@ -216,6 +216,9 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 ## frequently questioned answers
 
 ### ttyplot quits when there is no more data
+
+**UPDATE** as of version 1.5 ttyplot will print "input stream closed" and wait forever, instead of quititing.
+
 this is by design; your problem is likely that the output is lost when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting)
 
 you can also "work around" by adding `sleep`, `read`, `cat` at the end of the stream, etc:
@@ -248,5 +251,5 @@ by default in unix stdio is buffered, you can work around it in [various ways](h
 ```
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
-Copyright (c) 2019-2021 Google LLC
+Copyright (c) 2019-2023 Google LLC
 ```
