@@ -1,7 +1,7 @@
 //
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
 // Copyright (c) 2018 by Antoni Sawicki
-// Copyright (c) 2019 by Google LLC
+// Copyright (c) 2019-2023 by Google LLC
 // Apache License 2.0
 //
 
