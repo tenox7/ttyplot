@@ -27,15 +27,15 @@ snap install ttyplot
 
 ### debian
 
-maybe
+you can try
 
 ```
 apt install ttyplot
 ```
 
-[Download Packages](https://packages.debian.org/sid/ttyplot) 
+alternatively [download packages](https://packages.debian.org/sid/ttyplot) 
 
-[Tracker](https://tracker.debian.org/pkg/ttyplot)
+[debian tracker](https://tracker.debian.org/pkg/ttyplot)
 
 ### macOS
 
