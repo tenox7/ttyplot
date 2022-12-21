@@ -18,7 +18,7 @@
 #include <err.h>
 #endif
 
-#define verstring "github.com/tenox7/ttyplot 1.4"
+#define verstring "github.com/tenox7/ttyplot 1.5"
 
 #ifdef NOACS
 #define T_HLINE '-'
