@@ -34,6 +34,19 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
+chtype plotchar, max_errchar, min_errchar;
+time_t t1,t2,td;
+struct tm *lt;
+double max=FLT_MIN;
+double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
+char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
+double values1[1024]={0}, values2[1024]={0};
+double cval1=FLT_MAX, pval1=FLT_MAX;
+double cval2=FLT_MAX, pval2=FLT_MAX;
+double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
+double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
+int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+
 void usage() {
     printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n\n"
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
@@ -68,6 +81,15 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     }
 
     *avg=tot/i;
+}
+
+void gethw() {
+    #ifdef NOGETMAXYX
+    height=LINES;
+    width=COLS;
+    #else
+    getmaxyx(stdscr, height, width);
+    #endif
 }
 
 void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
@@ -116,9 +138,69 @@ void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
                   hce, lce);
 }
 
+void paint_plot() {
+    erase();
+    #ifdef _AIX
+    refresh();
+    #endif
+    gethw();
+    plotheight=height-4;
+    plotwidth=width-4;
+    if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
+        exit(0);
+
+    getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
+    getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
+
+    if(max1>max2)
+        max=max1;
+    else
+        max=max2;
+
+    if(max<softmax)
+        max=softmax;
+    if(hardmax!=FLT_MAX)
+        max=hardmax;
+
+    mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
+
+    lt=localtime(&t1);
+    #ifdef __sun
+    asctime_r(lt, ls, sizeof(ls));
+    #else
+    asctime_r(lt, ls);
+    #endif
+    mvprintw(height-2, width-strlen(ls), "%s", ls);
+
+    #ifdef _AIX
+    mvaddch(height-2, 5, plotchar);
+    #else
+    mvvline(height-2, 5, plotchar|A_NORMAL, 1);
+    #endif
+    mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
+    if(rate)
+        printw(" interval=%llds", (long long int)td);
+
+    if(two) {
+        mvaddch(height-1, 5, ' '|A_REVERSE);
+        mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
+    }
+
+    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
+
+    draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
+
+    mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
+
+    move(0,0);
+    refresh();
+}
+
 void resize() {
     endwin();
     refresh();
+    clear();
+    paint_plot();
 }
 
 void finish() {
@@ -130,30 +212,9 @@ void finish() {
 }
 
 int main(int argc, char *argv[]) {
-    double values1[1024]={0};
-    double values2[1024]={0};
-    double cval1=FLT_MAX, pval1=FLT_MAX;
-    double cval2=FLT_MAX, pval2=FLT_MAX;
-    double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
-    double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
-    int n=0;
-    int r=0;
-    int v=0;
-    int width=0, height=0;
-    int plotwidth=0, plotheight=0;
-    time_t t1,t2,td;
-    struct tm *lt;
-    int c;
-    chtype plotchar=T_VLINE, max_errchar='e', min_errchar='v';
-    double max=FLT_MIN;
-    double softmax=FLT_MIN;
-    double hardmax=FLT_MAX;
-    double hardmin=0.0;
-    char title[256]=".: ttyplot :.";
-    char unit[64]={0};
-    char ls[256]={0};
-    int rate=0;
-    int two=0;
+    plotchar=T_VLINE;
+    max_errchar='e';
+    min_errchar='v';
 
     opterr=0;
     while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
@@ -219,12 +280,7 @@ int main(int argc, char *argv[]) {
 
     erase();
     refresh();
-    #ifdef NOGETMAXYX
-    height=LINES;
-    width=COLS;
-    #else
-    getmaxyx(stdscr, height, width);
-    #endif
+    gethw();
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
 
@@ -285,71 +341,12 @@ int main(int argc, char *argv[]) {
             time(&t1);
         }
 
-        erase();
-        #ifdef _AIX
-        refresh();
-        #endif
-        #ifdef NOGETMAXYX
-        height=LINES;
-        width=COLS;
-        #else
-        getmaxyx(stdscr, height, width);
-        #endif
-        plotheight=height-4;
-        plotwidth=width-4;
-        if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
-            return 0;
-
-        getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
-        getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
-
-        if(max1>max2)
-            max=max1;
-        else
-            max=max2;
-
-        if(max<softmax)
-            max=softmax;
-        if(hardmax!=FLT_MAX)
-            max=hardmax;
-
-        mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
-
-        lt=localtime(&t1);
-        #ifdef __sun
-        asctime_r(lt, ls, sizeof(ls));
-        #else
-        asctime_r(lt, ls);
-        #endif
-        mvprintw(height-2, width-strlen(ls), "%s", ls);
-
-        #ifdef _AIX
-        mvaddch(height-2, 5, plotchar);
-        #else
-        mvvline(height-2, 5, plotchar|A_NORMAL, 1);
-        #endif
-        mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
-        if(rate)
-            printw(" interval=%llds", (long long int)td);
-
-        if(two) {
-            mvaddch(height-1, 5, ' '|A_REVERSE);
-            mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
-        }
-
-        plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
-
-        draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
-
-        mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
+        paint_plot();
 
         if(n<(int)((plotwidth)-1))
             n++;
         else
             n=0;
-
-        move(0,0);
-        refresh();
     }
 
     endwin();
