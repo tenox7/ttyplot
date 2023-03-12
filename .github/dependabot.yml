@@ -1,0 +1,15 @@
+# Copyright (c) 2023 Sebastian Pipping <sebastian@pipping.org>
+# Licensed under Apache License Version 2.0
+
+version: 2
+updates:
+
+  - package-ecosystem: "github-actions"
+    commit-message:
+      include: "scope"
+      prefix: "Actions"
+    directory: "/"
+    labels:
+      - "enhancement"
+    schedule:
+      interval: "weekly"
