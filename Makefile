@@ -15,8 +15,10 @@ install: ttyplot ttyplot.1
 	install -m644 ttyplot.1 $(DESTDIR)$(MANPREFIX)/man1
 
 uninstall:
-	rm -f $(PREFIX)$(PREFIX)/bin/ttyplot
-	rm -f $(PREFIX)$(MANPREFIX)/man1/ttyplot.1
+	rm -f $(DESTDIR)$(PREFIX)/bin/ttyplot
+	-rmdir -p $(DESTDIR)$(PREFIX)/bin
+	rm -f $(DESTDIR)$(MANPREFIX)/man1/ttyplot.1
+	-rmdir -p $(DESTDIR)$(MANPREFIX)/man1
 
 deb: ttyplot
 	mkdir -p $(PKGDIR)
