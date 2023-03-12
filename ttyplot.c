@@ -209,10 +209,12 @@ void resize() {
 }
 
 void finish() {
+    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
     curs_set(FALSE);
     echo();
     refresh();
     endwin();
+    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
     exit(0);
 }
 
