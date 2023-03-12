@@ -34,6 +34,7 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
+sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
 struct tm *lt;
@@ -193,13 +194,17 @@ void paint_plot() {
     mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
 
     move(0,0);
+    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
     refresh();
+    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
 }
 
 void resize() {
+    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
     endwin();
     refresh();
     clear();
+    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
     paint_plot();
 }
 
@@ -275,14 +280,16 @@ int main(int argc, char *argv[]) {
     time(&t1);
     noecho();
     curs_set(FALSE);
-    signal(SIGWINCH, (void*)resize);
-    signal(SIGINT, (void*)finish);
-
     erase();
     refresh();
     gethw();
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
+
+    signal(SIGWINCH, (void*)resize);
+    signal(SIGINT, (void*)finish);
+    sigemptyset(&sigmsk);
+    sigaddset(&sigmsk, SIGWINCH);
 
     while(1) {
         if(two)
@@ -298,7 +305,9 @@ int main(int argc, char *argv[]) {
         }
         else if(r<0) {
             mvprintw(height/2, (width/2)-10, "input stream closed");
+            sigprocmask(SIG_BLOCK, &sigmsk, NULL);
             refresh();
+            sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
             pause();
         }
 
