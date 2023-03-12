@@ -48,7 +48,7 @@ double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 
-void usage() {
+void usage(void) {
     printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n\n"
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
             "  -r rate of a counter (divide value by measured sample interval)\n"
@@ -84,7 +84,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     *avg=tot/i;
 }
 
-void gethw() {
+void gethw(void) {
     #ifdef NOGETMAXYX
     height=LINES;
     width=COLS;
@@ -139,7 +139,7 @@ void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
                   hce, lce);
 }
 
-void paint_plot() {
+void paint_plot(void) {
     erase();
     #ifdef _AIX
     refresh();
