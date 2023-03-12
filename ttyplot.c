@@ -199,7 +199,8 @@ void paint_plot() {
     sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
 }
 
-void resize() {
+void resize(int signum) {
+    (void)signum;
     sigprocmask(SIG_BLOCK, &sigmsk, NULL);
     endwin();
     refresh();
@@ -208,7 +209,8 @@ void resize() {
     paint_plot();
 }
 
-void finish() {
+void finish(int signum) {
+    (void)signum;
     sigprocmask(SIG_BLOCK, &sigmsk, NULL);
     curs_set(FALSE);
     echo();
@@ -288,8 +290,8 @@ int main(int argc, char *argv[]) {
     mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
 
-    signal(SIGWINCH, (void*)resize);
-    signal(SIGINT, (void*)finish);
+    signal(SIGWINCH, resize);
+    signal(SIGINT, finish);
     sigemptyset(&sigmsk);
     sigaddset(&sigmsk, SIGWINCH);
 
