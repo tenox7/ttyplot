@@ -206,6 +206,7 @@ void resize(int signum) {
     refresh();
     clear();
     sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
+    signal(SIGWINCH, resize);
     paint_plot();
 }
 
