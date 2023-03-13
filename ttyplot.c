@@ -224,6 +224,7 @@ int main(int argc, char *argv[]) {
     plotchar=T_VLINE;
     max_errchar='e';
     min_errchar='v';
+    int i;
 
     opterr=0;
     while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
@@ -252,7 +253,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 'M':
                 hardmin=atof(optarg);
-                int i;
                 for(i=0;i<1024;i++){
                     values1[i]=hardmin;
                     values2[i]=hardmin;
