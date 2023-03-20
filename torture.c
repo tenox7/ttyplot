@@ -8,15 +8,17 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
-int main() {
+int main(int argc, char *argv[]) {
+    int n;
 
-    srand(time(NULL));
-
-    for(;;) {
-        printf("%d %d\n", rand()%100,rand()%100);
+    for(n=0;;n+=5) {
+        printf("%.1f\n", (sin(n*M_PI/180)*5)+5);
+         if(argc==2)
+            printf("%.1f\n", (cos(n*M_PI/180)*5)+5);
         fflush(stdout);
-        //usleep(20000);
+        usleep(10000);
     }
 
     return 0;
