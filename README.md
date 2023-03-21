@@ -149,6 +149,11 @@ ttyplot supports "two line" plot for in/out or read/write
 snmpdelta -v 2c -c public -Cp 10 10.23.73.254 1.3.6.1.2.1.2.2.1.{10,16}.9 | gawk '{ print $NF/1000/1000/10; fflush(); }' | ttyplot -2 -t "interface 9 throughput" -u Mb/s
 ```
 
+### network throughput for an interface using netstat (OpenBSD, FreeBSD)
+```
+netstat -b -w ${1} -I em0 | awk 'NR>3 { print $1/1024; print $2/1024; fflush }' | ttyplot -2 -t "IN/OUT Bandwidth in KB/s (${1}s resolution)" -u "KB/s" -c "#"
+```
+
 ### local network throughput for all interfaces combined from sar
 ```
 sar  -n DEV 1 | gawk '{ if($6 ~ /rxkB/) { print iin/1000; print out/1000; iin=0; out=0; fflush(); } iin=iin+$6; out=out+$7; }' | ttyplot -2 -u "MB/s"
@@ -187,10 +192,7 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 { while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/interface-enp1s0/if_octets.rrd | awk 'END { print ($2)/1000/1000, ($3)/1000/1000 }'; sleep 10; done } | ttyplot -2 -r -t "enp1s0 throughput" -u MB/s
 ```
 
-### network throughput for an interface using netstat (OpenBSD, FreeBSD)
-```
-netstat -b -w ${1} -I em0 | awk 'NR>3 { print $1/1024; print $2/1024; fflush }' | ttyplot -2 -t "IN/OUT Bandwidth in KB/s (${1}s resolution)" -u "KB/s" -c "#"
-```
+
 
 &nbsp;
 &nbsp;
