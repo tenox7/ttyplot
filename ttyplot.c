@@ -13,6 +13,7 @@
 #include <time.h>
 #include <curses.h>
 #include <signal.h>
+#include <errno.h>
 
 #ifdef __OpenBSD__
 #include <err.h>
@@ -226,6 +227,7 @@ int main(int argc, char *argv[]) {
     max_errchar='e';
     min_errchar='v';
     int i;
+    char *errstr;
 
     opterr=0;
     while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
@@ -309,7 +311,11 @@ int main(int argc, char *argv[]) {
             continue;
         }
         else if(r<0) {
-            mvprintw(height/2, (width/2)-10, "input stream closed");
+            // TODO(tenox): check for EINTR
+            errstr = strerror(errno);
+            if(errno==0)
+                errstr = "input stream closed";
+            mvprintw(height/2, (width/2)-(strlen(errstr)/2), errstr);
             sigprocmask(SIG_BLOCK, &sigmsk, NULL);
             refresh();
             sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
