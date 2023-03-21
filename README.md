@@ -187,6 +187,11 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 { while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/interface-enp1s0/if_octets.rrd | awk 'END { print ($2)/1000/1000, ($3)/1000/1000 }'; sleep 10; done } | ttyplot -2 -r -t "enp1s0 throughput" -u MB/s
 ```
 
+### network throughput for an interface using netstat (OpenBSD, FreeBSD)
+```
+netstat -b -w ${1} -I em0 | awk 'NR>3 { print $1/1024; print $2/1024; fflush }' | ttyplot -2 -t "IN/OUT Bandwidth in KB/s (${1}s resolution)" -u "KB/s" -c "#"
+```
+
 &nbsp;
 &nbsp;
 
