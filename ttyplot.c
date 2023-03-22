@@ -311,10 +311,12 @@ int main(int argc, char *argv[]) {
             continue;
         }
         else if(r<0) {
-            // TODO(tenox): check for EINTR
-            errstr = strerror(errno);
-            if(errno==0)
+            if (errno==EINTR)
+                continue;
+            else if(errno==0)
                 errstr = "input stream closed";
+            else
+                errstr = strerror(errno);
             mvaddstr(height/2, (width/2)-(strlen(errstr)/2), errstr);
             sigprocmask(SIG_BLOCK, &sigmsk, NULL);
             refresh();
