@@ -164,7 +164,7 @@ void paint_plot(void) {
     if(hardmax!=FLT_MAX)
         max=hardmax;
 
-    mvprintw(height-1, width-sizeof(verstring)/sizeof(char), verstring);
+    mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
     lt=localtime(&t1);
     #ifdef __sun
@@ -172,7 +172,7 @@ void paint_plot(void) {
     #else
     asctime_r(lt, ls);
     #endif
-    mvprintw(height-2, width-strlen(ls), "%s", ls);
+    mvaddstr(height-2, width-strlen(ls), ls);
 
     #ifdef _AIX
     mvaddch(height-2, 5, plotchar);
@@ -192,7 +192,7 @@ void paint_plot(void) {
 
     draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
-    mvprintw(0, (width/2)-(strlen(title)/2), "%s", title);
+    mvaddstr(0, (width/2)-(strlen(title)/2), title);
 
     move(0,0);
     sigprocmask(SIG_BLOCK, &sigmsk, NULL);
@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
     erase();
     refresh();
     gethw();
-    mvprintw(height/2, (width/2)-14, "waiting for data from stdin");
+    mvaddstr(height/2, (width/2)-14, "waiting for data from stdin");
     refresh();
 
     signal(SIGWINCH, resize);
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
             errstr = strerror(errno);
             if(errno==0)
                 errstr = "input stream closed";
-            mvprintw(height/2, (width/2)-(strlen(errstr)/2), errstr);
+            mvaddstr(height/2, (width/2)-(strlen(errstr)/2), errstr);
             sigprocmask(SIG_BLOCK, &sigmsk, NULL);
             refresh();
             sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
