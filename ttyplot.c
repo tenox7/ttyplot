@@ -223,11 +223,12 @@ void finish(int signum) {
 }
 
 int main(int argc, char *argv[]) {
+    int i;
+    char *errstr;
+
     plotchar=T_VLINE;
     max_errchar='e';
     min_errchar='v';
-    int i;
-    char *errstr;
 
     opterr=0;
     while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
