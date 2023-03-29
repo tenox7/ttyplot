@@ -2,7 +2,7 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
-LDLIBS += -lcurses -ltinfo
+LDLIBS += `pkg-config --libs ncurses 2>/dev/null || echo '-lcurses -ltinfo'`
 PKG = ttyplot_1.4-1
 PKGDIR = $(PKG)/usr/local/bin
 
