@@ -1,0 +1,97 @@
+# Copyright (c) 2023 Sebastian Pipping <sebastian@pipping.org>
+# Licensed under Apache License Version 2.0
+
+name: Build on Linux
+
+# Drop permissions to minimum, for security
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: '0 3 * * 5'  # Every Friday at 3am
+
+jobs:
+  linux:
+    name: Build (${{ matrix.cc }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cc: gcc-11
+            cxx: g++-11
+            clang_major_version: null
+            clang_repo_suffix: null
+            runs-on: ubuntu-22.04
+          - cc: gcc-12
+            cxx: g++-12
+            clang_major_version: null
+            clang_repo_suffix: null
+            runs-on: ubuntu-22.04
+          - cc: clang-15
+            cxx: clang++-15
+            clang_major_version: 15
+            clang_repo_suffix: -15
+            runs-on: ubuntu-22.04
+          - cc: clang-16
+            cxx: clang++-16
+            clang_major_version: 16
+            clang_repo_suffix: -16
+            runs-on: ubuntu-22.04
+          - cc: clang-17
+            cxx: clang++-17
+            clang_major_version: 17
+            clang_repo_suffix:
+            runs-on: ubuntu-22.04
+    steps:
+      - name: Add Clang/LLVM repositories
+        if: "${{ contains(matrix.cxx, 'clang') }}"
+        run: |-
+          set -x
+          source /etc/os-release
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}${{ matrix.clang_repo_suffix }} main"
+
+      - name: Install build dependencies
+        run: |-
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            libncurses-dev \
+            pkg-config
+
+      - name: Install build dependency Clang ${{ matrix.clang_major_version }}
+        if: "${{ contains(matrix.cxx, 'clang') }}"
+        run: |-
+          sudo apt-get install --yes --no-install-recommends -V \
+              clang-${{ matrix.clang_major_version }}
+
+      - name: Checkout Git branch
+        uses: actions/checkout@v3
+
+      - name: 'Build'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |-
+          CFLAGS='-std=gnu99 -pedantic -Werror' make
+
+      - name: 'Install'
+        run: |-
+          set -x -o pipefail
+          make install DESTDIR="${PWD}"/ROOT/
+          find ROOT/ | sort | xargs ls -ld
+
+      - name: 'Uninstall'
+        run: |-
+          set -x
+          make uninstall DESTDIR="${PWD}"/ROOT/
+          [[ "$(find ROOT/ -not -type d | tee /dev/stderr)" == '' ]]  # i.e. fail CI if leftover files
+
+      - name: 'Clean'
+        run: |-
+          set -x -o pipefail
+          make clean
+          [[ "$(git ls-files -o | tee /dev/stderr | wc -l)" -eq 0 ]]
