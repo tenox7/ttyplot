@@ -19,7 +19,11 @@
 #include <err.h>
 #endif
 
-#define verstring "https://github.com/tenox7/ttyplot 1.5"
+#define STR_(x) #x
+#define STR(x) STR_(x)
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 5
+#define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR)
 
 #ifdef NOACS
 #define T_HLINE '-'
@@ -48,9 +52,10 @@ double cval2=FLT_MAX, pval2=FLT_MAX;
 double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 void usage(void) {
-    printf("Usage:\n  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n\n"
+    printf("Usage:\n  ttyplot [-h] [-v] [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n\n"
             "  -2 read two values and draw two plots, the second one is in reverse video\n"
             "  -r rate of a counter (divide value by measured sample interval)\n"
             "  -c character to use for plot line, eg @ # %% . etc\n"
@@ -60,8 +65,13 @@ void usage(void) {
             "  -m maximum value, if exceeded draws error line (see -e), upper-limit of plot scale is fixed\n"
             "  -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed\n"
             "  -t title of the plot\n"
-            "  -u unit displayed beside vertical bar\n\n");
-    exit(0);
+            "  -u unit displayed beside vertical bar\n"
+            "  -v print the current version and exit\n"
+            "  -h print this help message and exit\n\n");
+}
+
+void version(void) {
+    printf("ttyplot %s\n", VERSION_STR);
 }
 
 void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
@@ -225,13 +235,51 @@ void finish(int signum) {
 int main(int argc, char *argv[]) {
     int i;
     char *errstr;
+    int cached_opterr;
+    const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
+    int show_ver;
+    int show_usage;
 
     plotchar=T_VLINE;
     max_errchar='e';
     min_errchar='v';
 
+    cached_opterr = opterr;
     opterr=0;
-    while((c=getopt(argc, argv, "2rc:e:E:s:m:M:t:u:")) != -1)
+
+    show_ver = 0;
+    show_usage = 0;
+
+    // Run a 1st iteration over the arguments to check for usage,
+    // version or error.
+    while((c=getopt(argc, argv, optstring)) != -1) {
+        switch(c) {
+            case 'v':
+                show_ver = 1;
+                break;
+            case 'h':
+                show_usage = 1;
+                break;
+            case '?':
+                // Upon error exit immediately.
+                usage();
+                exit(1);
+        }
+    }
+
+    if (show_usage) {
+        usage();
+        exit(0);
+    }
+    if (show_ver) {
+        version();
+        exit(0);
+    }
+
+    // Reset the getopt index as per spec.
+    optind = 0;
+
+    while((c=getopt(argc, argv, optstring)) != -1) {
         switch(c) {
             case 'r':
                 rate=1;
@@ -268,10 +316,10 @@ int main(int argc, char *argv[]) {
             case 'u':
                 snprintf(unit, sizeof(unit), "%s", optarg);
                 break;
-            case '?':
-                usage();
-                break;
         }
+    }
+
+    opterr = cached_opterr;
 
     if(softmax <= hardmin)
         softmax = hardmin + 1;
