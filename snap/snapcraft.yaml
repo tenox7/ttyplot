@@ -1,9 +1,9 @@
 name: ttyplot
-version: 1.5.0
+version: 1.5.1
 summary: realtime plotting utility for terminal/console with data input from stdin
 description: |
-  takes data from standard input / unix pipeline, 
-  most commonly some tool like ping, snmpget, 
+  takes data from standard input / unix pipeline,
+  most commonly some tool like ping, snmpget,
   netstat, ifconfig, ip, sar, vmstat, etc. and
   plots in text mode on a terminal in real time,
   supports rate calculation for counters and up to
