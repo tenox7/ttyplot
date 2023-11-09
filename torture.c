@@ -11,6 +11,7 @@
 #include <math.h>
 
 int main(int argc, char *argv[]) {
+    (void) argv;
     int n;
 
     for(n=0;;n+=5) {
