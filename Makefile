@@ -3,8 +3,6 @@ PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
 LDLIBS += `pkg-config --libs ncurses 2>/dev/null || echo '-lcurses -ltinfo'`
-PKG = ttyplot_1.4-1
-PKGDIR = $(PKG)/usr/local/bin
 torture: LDLIBS = -lm
 
 all: ttyplot
@@ -19,12 +17,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/ttyplot
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/ttyplot.1
 
-deb: ttyplot
-	mkdir -p $(PKGDIR)
-	cp ttyplot $(PKGDIR)
-	dpkg-deb --build $(PKG)
-
 clean:
-	rm -f ttyplot torture $(PKGDIR)/*
+	rm -f ttyplot torture
 
 .PHONY: all clean install uninstall
