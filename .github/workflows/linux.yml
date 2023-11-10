@@ -12,6 +12,7 @@ on:
   push:
   schedule:
     - cron: '0 3 * * 5'  # Every Friday at 3am
+  workflow_dispatch:
 
 jobs:
   linux:
