@@ -31,6 +31,11 @@ jobs:
             clang_major_version: null
             clang_repo_suffix: null
             runs-on: ubuntu-22.04
+          - cc: gcc-13
+            cxx: g++-13
+            clang_major_version: null
+            clang_repo_suffix: null
+            runs-on: ubuntu-22.04
           - cc: clang-15
             cxx: clang++-15
             clang_major_version: 15
