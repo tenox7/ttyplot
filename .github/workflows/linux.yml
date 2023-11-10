@@ -44,7 +44,7 @@ jobs:
           - cc: clang-17
             cxx: clang++-17
             clang_major_version: 17
-            clang_repo_suffix:
+            clang_repo_suffix: -17
             runs-on: ubuntu-22.04
     steps:
       - name: Add Clang/LLVM repositories
