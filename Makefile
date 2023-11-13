@@ -2,6 +2,7 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
+CFLAGS += `pkg-config --cflags ncursesw`
 LDLIBS += `pkg-config --libs ncursesw`
 torture: LDLIBS = -lm
 

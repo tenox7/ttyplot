@@ -5,7 +5,6 @@
 // Apache License 2.0
 //
 
-#define _XOPEN_SOURCE 500  // Get ncurses wchar_t support from SUSv2 (UNIX 98)
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
