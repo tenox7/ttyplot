@@ -41,6 +41,12 @@ alternatively [download packages](https://packages.debian.org/sid/ttyplot)
 
 [debian tracker](https://tracker.debian.org/pkg/ttyplot)
 
+### gentoo
+
+```
+emerge -av app-admin/ttyplot
+```
+
 ### macOS
 
 ```
