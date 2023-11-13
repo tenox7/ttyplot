@@ -12,6 +12,7 @@ on:
   push:
   schedule:
     - cron: '0 3 * * 5'  # Every Friday at 3am
+  workflow_dispatch:
 
 jobs:
   linux:
@@ -21,29 +22,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - cc: gcc-11
-            cxx: g++-11
+          - cc: gcc-13
+            cxx: g++-13
             clang_major_version: null
             clang_repo_suffix: null
-            runs-on: ubuntu-22.04
-          - cc: gcc-12
-            cxx: g++-12
-            clang_major_version: null
-            clang_repo_suffix: null
-            runs-on: ubuntu-22.04
-          - cc: clang-15
-            cxx: clang++-15
-            clang_major_version: 15
-            clang_repo_suffix: -15
-            runs-on: ubuntu-22.04
-          - cc: clang-16
-            cxx: clang++-16
-            clang_major_version: 16
-            clang_repo_suffix: -16
             runs-on: ubuntu-22.04
           - cc: clang-17
             cxx: clang++-17
             clang_major_version: 17
+            clang_repo_suffix: -17
+            runs-on: ubuntu-22.04
+          - cc: clang-18
+            cxx: clang++-18
+            clang_major_version: 18
             clang_repo_suffix:
             runs-on: ubuntu-22.04
     steps:
