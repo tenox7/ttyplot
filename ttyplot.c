@@ -5,12 +5,14 @@
 // Apache License 2.0
 //
 
+#define _XOPEN_SOURCE 500  // Get ncurses wchar_t support from SUSv2 (UNIX 98)
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <float.h>
 #include <time.h>
+#include <locale.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <errno.h>
@@ -45,7 +47,7 @@
 #endif
 
 sigset_t sigmsk;
-chtype plotchar, max_errchar, min_errchar;
+cchar_t plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
 struct tm *lt;
 double max=FLT_MIN;
@@ -121,19 +123,26 @@ void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvaddch(h-3, 2, T_LLCR);
 }
 
-void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype hce, chtype lce) {
+void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2, cchar_t *hce, cchar_t *lce) {
+    static cchar_t space = {
+        .attr = A_REVERSE,
+        .chars = {' ', '\0'}
+    };
+    cchar_t c1r = *c1, c2r = *c2;
+    c1r.attr |= A_REVERSE;
+    c2r.attr |= A_REVERSE;
     if(l1 > l2) {
-        mvvline(ph+1-l1, x, c1, l1-l2 );
-        mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
+        mvvline_set(ph+1-l1, x, c1, l1-l2 );
+        mvvline_set(ph+1-l2, x, &c2r, l2 );
     } else if(l1 < l2) {
-        mvvline(ph+1-l2, x, (c2==hce || c2==lce) ? c2|A_REVERSE : ' '|A_REVERSE,  l2-l1 );
-        mvvline(ph+1-l1, x, c1|A_REVERSE, l1 );
+        mvvline_set(ph+1-l2, x, (c2==hce || c2==lce) ? &c2r : &space,  l2-l1 );
+        mvvline_set(ph+1-l1, x, &c2r, l1 );
     } else {
-        mvvline(ph+1-l2, x, c2|A_REVERSE, l2 );
+        mvvline_set(ph+1-l2, x, &c2r, l2 );
     }
 }
 
-void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, chtype pc, chtype hce, chtype lce, double hm) {
+void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
     const int first_col=3;
     int i=(n+1)%pw;
     int x;
@@ -199,7 +208,7 @@ void paint_plot(void) {
     asctime_r(lt, ls);
     mvaddstr(height-2, width-strlen(ls), ls);
 
-    mvvline(height-2, 5, plotchar|A_NORMAL, 1);
+    mvvline_set(height-2, 5, &plotchar, 1);
     mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
     if(rate)
         printw(" interval=%llds", (long long int)td);
@@ -209,7 +218,7 @@ void paint_plot(void) {
         mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
     }
 
-    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
+    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, &plotchar, &max_errchar, &min_errchar, hardmax);
 
     draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
@@ -251,9 +260,13 @@ int main(int argc, char *argv[]) {
     int show_ver;
     int show_usage;
 
-    plotchar=T_VLINE;
-    max_errchar='e';
-    min_errchar='v';
+    setlocale(LC_ALL, "");
+    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supprted:
+        plotchar.chars[0]=0x2502;  // U+2502 box drawings light vertical
+    else
+        plotchar.chars[0]='|';     // U+007C vertical line
+    max_errchar.chars[0]='e';
+    min_errchar.chars[0]='v';
 
     cached_opterr = opterr;
     opterr=0;
@@ -303,16 +316,16 @@ int main(int argc, char *argv[]) {
                 break;
             case '2':
                 two=1;
-                plotchar='|';
+                plotchar.chars[0]='|';
                 break;
             case 'c':
-                plotchar=optarg[0];
+                mbtowc(&plotchar.chars[0], optarg, MB_CUR_MAX);
                 break;
             case 'e':
-                max_errchar=optarg[0];
+                mbtowc(&max_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
             case 'E':
-                min_errchar=optarg[0];
+                mbtowc(&min_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
             case 's':
                 softmax=atof(optarg);
