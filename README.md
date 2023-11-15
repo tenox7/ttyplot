@@ -31,15 +31,11 @@ snap install ttyplot
 
 ### debian
 
-you can try
-
 ```
 apt install ttyplot
 ```
 
-alternatively [download packages](https://packages.debian.org/sid/ttyplot) 
-
-[debian tracker](https://tracker.debian.org/pkg/ttyplot)
+alternatively [download](https://packages.debian.org/sid/ttyplot) | [tracker](https://tracker.debian.org/pkg/ttyplot)
 
 ### gentoo
 
@@ -61,7 +57,7 @@ pkg install ttyplot
 
 ### misc
 
-for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases)
+for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases), especially [older versions](https://github.com/tenox7/ttyplot/releases/tag/1.4)
 
 ## examples
 
