@@ -155,12 +155,29 @@ void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
                   hce, lce);
 }
 
+void show_all_centered(const char * message) {
+    const size_t message_len = strlen(message);
+    const int x = ((int)message_len > width) ? 0 : (width/2 - (int)message_len/2);
+    const int y = height/2;
+    mvaddnstr(y, x, message, width);
+}
+
+int window_big_enough_to_draw(void) {
+    return (width >= 68) && (height >= 5);
+}
+
+void show_window_size_error(void) {
+    show_all_centered("Window too small...");
+}
+
 void paint_plot(void) {
     erase();
     #ifdef _AIX
     refresh();
     #endif
     gethw();
+
+if (window_big_enough_to_draw()) {
     plotheight=height-4;
     plotwidth=width-4;
     if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
@@ -208,6 +225,9 @@ void paint_plot(void) {
     draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
     mvaddstr(0, (width/2)-(strlen(title)/2), title);
+} else {
+    show_window_size_error();
+}
 
     move(0,0);
     sigprocmask(SIG_BLOCK, &sigmsk, NULL);
@@ -344,7 +364,11 @@ int main(int argc, char *argv[]) {
     erase();
     refresh();
     gethw();
-    mvaddstr(height/2, (width/2)-14, "waiting for data from stdin");
+    if (window_big_enough_to_draw()) {
+        show_all_centered("waiting for data from stdin");
+    } else {
+        show_window_size_error();
+    }
     refresh();
 
     signal(SIGWINCH, resize);
@@ -371,7 +395,11 @@ int main(int argc, char *argv[]) {
                 errstr = "input stream closed";
             else
                 errstr = strerror(errno);
-            mvaddstr(height/2, (width/2)-(strlen(errstr)/2), errstr);
+            if (window_big_enough_to_draw()) {
+                show_all_centered(errstr);
+            } else {
+                show_window_size_error();
+            }
             sigprocmask(SIG_BLOCK, &sigmsk, NULL);
             refresh();
             sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
