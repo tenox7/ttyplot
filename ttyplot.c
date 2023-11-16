@@ -23,7 +23,7 @@
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 5
-#define VERSION_PATCH 1
+#define VERSION_PATCH 2
 #if VERSION_PATCH == 0
     #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR)
 #else
@@ -301,8 +301,14 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // Reset the getopt index as per spec.
-    optind = 0;
+    // Run a 2nd iteration over the arguments to actually process the options.
+    // According to getopt's documentation this is done by setting optind to 1
+    // (or 0 in some special cases). On BSDs and Macs optreset must be set to 1
+    // in addition.
+    optind = 1;
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    optreset = 1;
+#endif
 
     while((c=getopt(argc, argv, optstring)) != -1) {
         switch(c) {
