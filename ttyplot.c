@@ -174,7 +174,14 @@ void paint_plot(void) {
     erase();
     gethw();
 
-if (window_big_enough_to_draw()) {
+    if(!window_big_enough_to_draw()) {
+        show_window_size_error();
+        sigprocmask(SIG_BLOCK, &sigmsk, NULL);
+        refresh();
+        sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
+        return;
+    }
+
     plotheight=height-4;
     plotwidth=width-4;
     if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
@@ -214,9 +221,6 @@ if (window_big_enough_to_draw()) {
     draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
     mvaddstr(0, (width/2)-(strlen(title)/2), title);
-} else {
-    show_window_size_error();
-}
 
     move(0,0);
     sigprocmask(SIG_BLOCK, &sigmsk, NULL);
