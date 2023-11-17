@@ -200,13 +200,15 @@ void paint_plot(void) {
     mvaddstr(height-2, width-strlen(ls), ls);
 
     mvvline(height-2, 5, plotchar|A_NORMAL, 1);
-    mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
-    if(rate)
-        printw(" interval=%llds", (long long int)td);
+    if (v > 0) {
+        mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
+        if(rate)
+            printw(" interval=%llds", (long long int)td);
 
-    if(two) {
-        mvaddch(height-1, 5, ' '|A_REVERSE);
-        mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
+        if(two) {
+            mvaddch(height-1, 5, ' '|A_REVERSE);
+            mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
+        }
     }
 
     plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
