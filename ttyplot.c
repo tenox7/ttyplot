@@ -172,9 +172,6 @@ void show_window_size_error(void) {
 
 void paint_plot(void) {
     erase();
-    #ifdef _AIX
-    refresh();
-    #endif
     gethw();
 
 if (window_big_enough_to_draw()) {
@@ -199,18 +196,10 @@ if (window_big_enough_to_draw()) {
     mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
     lt=localtime(&t1);
-    #ifdef __sun
-    asctime_r(lt, ls, sizeof(ls));
-    #else
     asctime_r(lt, ls);
-    #endif
     mvaddstr(height-2, width-strlen(ls), ls);
 
-    #ifdef _AIX
-    mvaddch(height-2, 5, plotchar);
-    #else
     mvvline(height-2, 5, plotchar|A_NORMAL, 1);
-    #endif
     mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
     if(rate)
         printw(" interval=%llds", (long long int)td);
