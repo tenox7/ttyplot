@@ -2,9 +2,14 @@
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
 // Copyright (c) 2018 by Antoni Sawicki
 // Copyright (c) 2019-2023 by Google LLC
+// Copyright (c) 2023 by Edgar Bonet
+// Copyright (c) 2023 by Sebastian Pipping
 // Apache License 2.0
 //
 
+#include <assert.h>
+#include <ctype.h>  // isspace
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -44,7 +49,10 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
-sigset_t sigmsk;
+sigset_t block_sigset;
+sigset_t empty_sigset;
+volatile sig_atomic_t sigint_pending = 0;
+volatile sig_atomic_t sigwinch_pending = 0;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
 struct tm *lt;
@@ -56,7 +64,7 @@ double cval1=FLT_MAX, pval1=FLT_MAX;
 double cval2=FLT_MAX, pval2=FLT_MAX;
 double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
-int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 void usage(void) {
@@ -167,14 +175,6 @@ void paint_plot(void) {
     erase();
     gethw();
 
-    if(!window_big_enough_to_draw()) {
-        show_window_size_error();
-        sigprocmask(SIG_BLOCK, &sigmsk, NULL);
-        refresh();
-        sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
-        return;
-    }
-
     plotheight=height-4;
     plotwidth=width-4;
     if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
@@ -218,36 +218,38 @@ void paint_plot(void) {
     mvaddstr(0, (width/2)-(strlen(title)/2), title);
 
     move(0,0);
-    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
-    refresh();
-    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
 }
 
 void resize(int signum) {
     (void)signum;
-    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
-    endwin();
-    refresh();
-    clear();
-    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
-    signal(SIGWINCH, resize);
-    paint_plot();
+    sigwinch_pending = 1;
 }
 
 void finish(int signum) {
     (void)signum;
-    sigprocmask(SIG_BLOCK, &sigmsk, NULL);
-    curs_set(FALSE);
-    echo();
+    sigint_pending = 1;
+}
+
+void redraw_screen(const char * errstr) {
+    if (window_big_enough_to_draw()) {
+        paint_plot();
+
+        if (errstr != NULL) {
+            show_all_centered(errstr);
+        } else if (v < 1) {
+            show_all_centered("waiting for data from stdin");
+        }
+    } else {
+        show_window_size_error();
+    }
+
     refresh();
-    endwin();
-    sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
-    exit(0);
 }
 
 int main(int argc, char *argv[]) {
     int i;
-    char *errstr;
+    char *errstr = NULL;
+    bool stdin_is_open = true;
     int cached_opterr;
     const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
     int show_ver;
@@ -358,47 +360,177 @@ int main(int argc, char *argv[]) {
     erase();
     refresh();
     gethw();
-    if (window_big_enough_to_draw()) {
-        show_all_centered("waiting for data from stdin");
-    } else {
-        show_window_size_error();
-    }
-    refresh();
+
+    redraw_screen(errstr);
+
+    sigemptyset(&empty_sigset);
+
+    sigemptyset(&block_sigset);
+    sigaddset(&block_sigset, SIGINT);
+    sigaddset(&block_sigset, SIGWINCH);
+    sigprocmask(SIG_BLOCK, &block_sigset, NULL);
 
     signal(SIGWINCH, resize);
     signal(SIGINT, finish);
-    sigemptyset(&sigmsk);
-    sigaddset(&sigmsk, SIGWINCH);
+
+    char input_buf[4096] = "";
+    size_t input_len = 0;
 
     while(1) {
+        if (sigint_pending) {
+            break;
+        }
+
+        if (sigwinch_pending) {
+            sigwinch_pending = 0;
+
+            endwin();
+            initscr();
+            clear();
+            refresh();
+
+            gethw();
+
+            goto redraw_and_continue;
+        }
+
+        // Block until (a) we receive a signal or (b) stdin can be read without blocking
+        // or (c) timeout expires, in oder to reduce use of CPU and power while idle
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        if (stdin_is_open) {
+            FD_SET(STDIN_FILENO, &read_fds);
+        }
+        const int select_nfds = stdin_is_open ? (STDIN_FILENO + 1) : 0;
+        const bool previous_parse_succeeded = (r == (two ? 2 : 1));
+        struct timespec timeout;
+        timeout.tv_sec = 0;
+        if (previous_parse_succeeded) {
+            timeout.tv_nsec = 0;  // we may have more input pressing, let's not throttle it down
+        } else {
+            timeout.tv_nsec = 500 * 1000 * 1000;  // <=500 milliseconds for a healthy clock display
+        }
+        const int select_ret = pselect(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
+
+        const bool signal_received = ((select_ret == -1) && (errno == EINTR));
+
+        if (signal_received) {
+            continue;  // i.e. skip right to signal handling
+        }
+
+        const bool stdin_can_be_read_without_blocking = ((select_ret == 1) && FD_ISSET(STDIN_FILENO, &read_fds));
+
+        // Read as much from stdin as we can (first read after select is non-blocking)
+        if (stdin_can_be_read_without_blocking) {
+            char * const read_target = input_buf + input_len;
+            const size_t max_bytes_to_read = sizeof(input_buf) - (input_len + 1 /* terminator */);
+            const ssize_t bytes_read_or_error = read(STDIN_FILENO, read_target, max_bytes_to_read);
+
+            if (bytes_read_or_error > 0) {
+                input_len += bytes_read_or_error;
+
+                // Last resort: truncate existing input if input line ever is
+                //              too long
+                if (input_len >= sizeof(input_buf) - 1) {
+                    input_len = 0;
+                }
+
+                assert(input_len < sizeof(input_buf));
+                input_buf[input_len] = '\0';
+            } else {
+                assert(bytes_read_or_error <= 0);
+                if (bytes_read_or_error == 0) {
+                    close(STDIN_FILENO);
+                    errstr = "input stream closed";
+                    stdin_is_open = false;
+                } else {
+                    assert(bytes_read_or_error == -1);
+                    if ((errno != EINTR) && (errno != EAGAIN)) {
+                        errstr = strerror(errno);
+                        stdin_is_open = false;
+                    }
+                }
+            }
+        }
+
+        // Extract values from record; note that the record may turn out incomplete
+        double d1 = 0.0;
+        double d2 = 0.0;
+        int record_len = -1;
+
         if(two)
-            r=scanf("%lf %lf", &values1[n], &values2[n]);
+            r = sscanf(input_buf, "%lf %lf%*[ \t\r\n]%n", &d1, &d2, &record_len);
         else
-            r=scanf("%lf", &values1[n]);
+            r = sscanf(input_buf, "%lf%*[ \t\r\n]%n", &d1, &record_len);
+
+        // We need to detect and avoid mis-parsing "1.23" as two records "1.2" and "3"
+        const bool supposedly_complete_record = (r == (two ? 2 : 1));
+        const bool trailing_whitespace_present = (record_len != -1);
+
+        if (supposedly_complete_record && ! trailing_whitespace_present) {
+            const bool need_more_input = stdin_is_open;
+            if (need_more_input) {
+                r = 0;  // so that the parse is not mis-classified as a success further up
+                goto redraw_and_continue;
+            }
+
+            record_len = input_len;  // i.e. the whole thing
+        }
+
+        // In order to not get stuck with non-doubles garbage input forever,
+        // we need to drop input that we know(!) will never parse as doubles later.
+        if (! supposedly_complete_record && (input_len > 0)) {
+            char * walker = input_buf;
+
+            while (isspace(*walker)) walker++;  // skip leading whitespace (if any)
+
+            while ((*walker != '\0') && ! isspace(*walker)) walker++;  // skip non-double
+
+            if (two) {
+                if (*walker == '\0') {
+                    goto redraw_and_continue;
+                }
+
+                while (isspace(*walker)) walker++;  // skip gap whitespace
+
+                if (*walker == '\0') {
+                    goto redraw_and_continue;
+                }
+
+                while ((*walker != '\0') && ! isspace(*walker)) walker++;  // skip non-double
+            }
+
+            if (*walker == '\0') {
+                goto redraw_and_continue;
+            }
+
+            while (isspace(*walker)) walker++;  // skip trailing whitespace (if any)
+
+            record_len = walker - input_buf;  // i.e. how much to drop
+        }
+
+        // Drop the record that we just processed (well-formed or not) from the input buffer
+        if ((input_len > 0) && (record_len > 0)) {
+            char * move_source = input_buf + record_len;
+            const size_t bytes_to_move = input_len - record_len;
+            memmove(input_buf, move_source, bytes_to_move);
+            input_len = bytes_to_move;
+            input_buf[input_len] = '\0';
+        }
+
+        if (! supposedly_complete_record) {
+            goto redraw_and_continue;
+        }
 
         v++;
 
-        if(r==0) {
-            while(getchar()!='\n');
-            continue;
-        }
-        else if(r<0) {
-            if (errno==EINTR)
-                continue;
-            else if(errno==0)
-                errstr = "input stream closed";
-            else
-                errstr = strerror(errno);
-            if (window_big_enough_to_draw()) {
-                show_all_centered(errstr);
-            } else {
-                show_window_size_error();
-            }
-            sigprocmask(SIG_BLOCK, &sigmsk, NULL);
-            refresh();
-            sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
-            pause();
-        }
+        if (n < plotwidth - 1)
+            n++;
+        else
+            n=0;
+
+        values1[n] = d1;
+        values2[n] = d2;
 
         if(values1[n] < 0)
             values1[n] = 0;
@@ -435,16 +567,11 @@ int main(int argc, char *argv[]) {
                 if(values2[n] < 0) // counter rewind
                     values2[n]=0;
             }
-        } else {
-            time(&t1);
         }
 
-        paint_plot();
-
-        if(n<(int)((plotwidth)-1))
-            n++;
-        else
-            n=0;
+redraw_and_continue:
+        time(&t1);  // to animate the clock display
+        redraw_screen(errstr);
     }
 
     endwin();
