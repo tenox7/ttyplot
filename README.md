@@ -57,7 +57,7 @@ pkg install ttyplot
 
 ### misc
 
-for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases), especially [older versions](https://github.com/tenox7/ttyplot/releases/tag/1.4)
+for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases), also [older versions](https://github.com/tenox7/ttyplot/releases/tag/1.4)
 
 ## examples
 
