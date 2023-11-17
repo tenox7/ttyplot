@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[]) {
     (void) argv;
-    int n;
+    unsigned int n;
 
     for(n=0;;n+=5) {
         printf("%.1f\n", (sin(n*M_PI/180)*5)+5);
