@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <float.h>
 #include <time.h>
+#include <sys/time.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <errno.h>
@@ -46,14 +47,13 @@
 
 sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
-time_t t1,t2,td;
+struct timeval now;
+double td;
 struct tm *lt;
 double max=FLT_MIN;
 double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
 char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
 double values1[1024]={0}, values2[1024]={0};
-double cval1=FLT_MAX, pval1=FLT_MAX;
-double cval2=FLT_MAX, pval2=FLT_MAX;
 double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
@@ -77,6 +77,35 @@ void usage(void) {
 
 void version(void) {
     printf("ttyplot %s\n", VERSION_STR);
+}
+
+// Replace *v1 and *v2 (if non-NULL) by their time derivatives.
+//  - v1, v2: addresses of input data and storage for results
+//  - now: current time
+// Return time since previous call.
+double derivative(double *v1, double *v2, const struct timeval *now)
+{
+    static double previous_v1, previous_v2, previous_t = DBL_MAX;
+    const double t = now->tv_sec + 1e-6 * now->tv_usec;
+    const double dt = t - previous_t;
+    previous_t = t;
+    if (v1) {
+        const double dv1 = *v1 - previous_v1;
+        previous_v1 = *v1;
+        if (dt <= 0)
+            *v1 = 0;
+        else
+            *v1 = dv1 / dt;
+    }
+    if (v2) {
+        const double dv2 = *v2 - previous_v2;
+        previous_v2 = *v2;
+        if (dt <= 0)
+            *v2 = 0;
+        else
+            *v2 = dv2 / dt;
+    }
+    return dt;
 }
 
 void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
@@ -202,14 +231,14 @@ void paint_plot(void) {
 
     mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
-    lt=localtime(&t1);
+    lt=localtime(&now.tv_sec);
     asctime_r(lt, ls);
     mvaddstr(height-2, width-strlen(ls), ls);
 
     mvvline(height-2, 5, plotchar|A_NORMAL, 1);
     mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
     if(rate)
-        printw(" interval=%llds", (long long int)td);
+        printw(" interval=%.3gs", td);
 
     if(two) {
         mvaddch(height-1, 5, ' '|A_REVERSE);
@@ -357,7 +386,7 @@ int main(int argc, char *argv[]) {
         err(1, "pledge");
     #endif
 
-    time(&t1);
+    gettimeofday(&now, NULL);
     noecho();
     curs_set(FALSE);
     erase();
@@ -410,39 +439,9 @@ int main(int argc, char *argv[]) {
         if(values2[n] < 0)
             values2[n] = 0;
 
-        if(rate) {
-            t2=t1;
-            time(&t1);
-            td=t1-t2;
-            if(td==0)
-                td=1;
-
-            if(cval1==FLT_MAX)
-                pval1=values1[n];
-            else
-                pval1=cval1;
-            cval1=values1[n];
-
-            values1[n]=(cval1-pval1)/td;
-
-            if(values1[n] < 0) // counter rewind
-                values1[n]=0;
-
-            if(two) {
-                if(cval2==FLT_MAX)
-                    pval2=values2[n];
-                else
-                    pval2=cval2;
-                cval2=values2[n];
-
-                values2[n]=(cval2-pval2)/td;
-
-                if(values2[n] < 0) // counter rewind
-                    values2[n]=0;
-            }
-        } else {
-            time(&t1);
-        }
+        gettimeofday(&now, NULL);
+        if (rate)
+            td=derivative(&values1[n], two ? &values2[n] : NULL, &now);
 
         paint_plot();
 
