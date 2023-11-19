@@ -31,17 +31,15 @@
     #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 #endif
 
+#define T_RARR '>'
+#define T_UARR '^'
 #ifdef NOACS
 #define T_HLINE '-'
 #define T_VLINE '|'
-#define T_RARR '>'
-#define T_UARR '^'
 #define T_LLCR 'L'
 #else
 #define T_HLINE ACS_HLINE
 #define T_VLINE ACS_VLINE
-#define T_RARR ACS_RARROW
-#define T_UARR ACS_UARROW
 #define T_LLCR ACS_LLCORNER
 #endif
 
