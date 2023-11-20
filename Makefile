@@ -2,7 +2,7 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
-LDLIBS += `pkg-config --libs ncurses 2>/dev/null || echo '-lcurses -ltinfo'`
+LDLIBS += `pkg-config --libs ncurses`
 torture: LDLIBS = -lm
 
 all: ttyplot
@@ -18,6 +18,13 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/ttyplot.1
 
 clean:
-	rm -f ttyplot torture
+	rm -f ttyplot torture *.o
 
-.PHONY: all clean install uninstall
+require_pkgconfig:
+	which pkg-config
+
+ttyplot.o: require_pkgconfig
+
+torture.o: require_pkgconfig
+
+.PHONY: all clean install uninstall require_pkgconfig
