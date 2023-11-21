@@ -19,6 +19,9 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #ifdef __OpenBSD__
 #include <err.h>
@@ -363,6 +366,16 @@ int main(int argc, char *argv[]) {
 
     redraw_screen(errstr);
 
+    // If stdin is redirected, open the terminal for reading user's keystrokes.
+    int tty = -1;
+    if (!isatty(STDIN_FILENO))
+        tty = open("/dev/tty", O_RDONLY);
+    if (tty != -1) {
+        // Disable input line buffering. The function below works even when stdin
+        // is redirected: it searches for a terminal in stdout and stderr.
+        cbreak();
+    }
+
     sigemptyset(&empty_sigset);
 
     sigemptyset(&block_sigset);
@@ -398,10 +411,16 @@ int main(int argc, char *argv[]) {
         // or (c) timeout expires, in oder to reduce use of CPU and power while idle
         fd_set read_fds;
         FD_ZERO(&read_fds);
+        int select_nfds = 0;
         if (stdin_is_open) {
             FD_SET(STDIN_FILENO, &read_fds);
+            select_nfds = STDIN_FILENO + 1;
         }
-        const int select_nfds = stdin_is_open ? (STDIN_FILENO + 1) : 0;
+        if (tty != -1) {
+            FD_SET(tty, &read_fds);
+            if (tty >= select_nfds)
+                select_nfds = tty + 1;
+        }
         const bool previous_parse_succeeded = (r == (two ? 2 : 1));
         struct timespec timeout;
         timeout.tv_sec = 0;
@@ -418,7 +437,17 @@ int main(int argc, char *argv[]) {
             continue;  // i.e. skip right to signal handling
         }
 
-        const bool stdin_can_be_read_without_blocking = ((select_ret == 1) && FD_ISSET(STDIN_FILENO, &read_fds));
+        // Handle user's keystrokes.
+        if (select_ret > 0 && FD_ISSET(tty, &read_fds)) {
+            char key;
+            int count = read(tty, &key, 1);
+            if (count == 1) {  // we did catch a keystroke
+                if (key == 'q')  // 'q' = quit
+                    break;
+            }
+        }
+
+        const bool stdin_can_be_read_without_blocking = ((select_ret > 0) && FD_ISSET(STDIN_FILENO, &read_fds));
 
         // Read as much from stdin as we can (first read after select is non-blocking)
         if (stdin_can_be_read_without_blocking) {
