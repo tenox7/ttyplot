@@ -442,7 +442,9 @@ int main(int argc, char *argv[]) {
             char key;
             int count = read(tty, &key, 1);
             if (count == 1) {  // we did catch a keystroke
-                if (key == 'q')  // 'q' = quit
+                if (key == 'r')  // 'r' = toggle rate mode
+                    rate = !rate;
+                else if (key == 'q')  // 'q' = quit
                     break;
             }
         }
