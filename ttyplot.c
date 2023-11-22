@@ -446,6 +446,9 @@ int main(int argc, char *argv[]) {
                     rate = !rate;
                 else if (key == 'q')  // 'q' = quit
                     break;
+            } else if (count == 0) {
+                close(tty);
+                tty = -1;
             }
         }
 
