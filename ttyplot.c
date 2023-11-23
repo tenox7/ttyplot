@@ -5,6 +5,11 @@
 // Apache License 2.0
 //
 
+// This is needed on macOS to get the ncurses widechar API, and pkg-config fails to define it.
+#ifdef __APPLE__
+#define _XOPEN_SOURCE_EXTENDED
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
