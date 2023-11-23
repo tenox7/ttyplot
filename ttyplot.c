@@ -134,20 +134,13 @@ void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype hce, 
 }
 
 void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, chtype pc, chtype hce, chtype lce, double hm) {
-    int i;
-    int x=3;
+    const int first_col=3;
+    int i=(n+1)%pw;
+    int x;
     max-=min;
 
-    for(i=n+1; i<pw; i++)
-        draw_line(x++, ph,
-                  (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
-                  (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
-                  (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
-                  (v2[i]>hm) ? hce : (v2[i]<min) ? lce : pc,
-                  hce, lce);
-
-    for(i=0; i<=n; i++)
-        draw_line(x++, ph,
+    for(x=first_col; x<first_col+pw; x++, i=(i+1)%pw)
+        draw_line(x, ph,
                   (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
                   (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
                   (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
