@@ -64,6 +64,17 @@ jobs:
             libncurses-dev \
             pkg-config
 
+      - name: Install build dependencies
+        if: "${{ runner.os == 'macOS' }}"
+        run: |-
+          brew tap homebrew/cask-fonts
+          brew install \
+            agg \
+            asciinema \
+            coreutils \
+            font-liberation \
+            imagemagick
+
       - name: Install build dependency Clang ${{ matrix.clang_major_version }}
         if: "${{ runner.os == 'Linux' && contains(matrix.cxx, 'clang') }}"
         run: |-
@@ -98,6 +109,49 @@ jobs:
           set -x
           make uninstall DESTDIR="${PWD}"/ROOT/
           [[ "$(find ROOT/ -not -type d | tee /dev/stderr)" == '' ]]  # i.e. fail CI if leftover files
+
+      - name: 'Run UI tests'
+        if: "${{ runner.os == 'macOS' }}"
+        run: |-
+          ./recordings/record.sh
+
+      - name: 'Upload UI test renderings for inspection'
+        if: "${{ runner.os == 'macOS' }}"
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32  # v3.1.3
+        with:
+          name: ttyplot_ui_test_${{ github.sha }}_${{ matrix.runs-on }}_${{ matrix.cc }}
+          path: recordings/actual*
+          if-no-files-found: error
+
+      - name: 'Evaluate UI test results'
+        if: "${{ runner.os == 'macOS' }}"
+        run: |-
+          assert_images_equal_enough() {
+            local a="${1}"
+            local b="${2}"
+            local diff_output="${3}"
+            local dissimilarity="$(compare -metric DSSIM "${a}" "${b}" "${diff_output}" 2>&1)"
+            if ! python3 <<<"import sys; sys.exit(int(${dissimilarity} > 0.0022))"; then
+              echo "Image \"${a}\" is not close enough of a match to image \"${b}\", dissimilarity is ${dissimilarity}." >&2
+              return 1
+            fi
+            true
+          }
+
+          cd recordings/
+
+          error=0
+
+          for expected in expected*.png; do
+            actual=${expected/expected/actual}
+            diff=${expected/expected/diff}
+
+            assert_images_equal_enough ${actual} ${expected} ${diff} || error=1
+          done
+
+          rm -fv actual*.* diff*.*
+
+          exit ${error}
 
       - name: 'Clean'
         run: |-
