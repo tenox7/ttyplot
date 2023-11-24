@@ -13,13 +13,14 @@
 #include <math.h>
 
 const char help[] =
-    "Usage: %s [-h] [-2] [-c] [-r rate]\n"
+    "Usage: %s [-h] [-2] [-c] [-g] [-r rate]\n"
     "  -h       print this help message and exit\n"
     "  -2       output two waves\n"
     "  -c       randomly chunk the output\n"
+    "  -g       occasionally output garbage\n"
     "  -r rate  sample rate in samples/s (default: 100)\n";
 
-const char optstring[] = "h2cr:";
+const char optstring[] = "h2cgr:";
 
 int main(int argc, char *argv[]) {
     char buffer[1024];
@@ -27,6 +28,7 @@ int main(int argc, char *argv[]) {
     int opt;
     bool two_waves = false;
     bool chunked = false;
+    bool add_garbage = false;
     double rate = 100;
 
     // Parse the command line.
@@ -40,6 +42,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'c':
                 chunked = true;
+                break;
+            case 'g':
+                add_garbage = true;
                 break;
             case 'r':
                 rate = atof(optarg);
@@ -58,8 +63,13 @@ int main(int argc, char *argv[]) {
 
     for (unsigned int n=0; ; n+=5) {
         buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
-        if(two_waves)
+        if (add_garbage && rand() <= RAND_MAX / 5)
+            buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
+        if (two_waves) {
             buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (cos(n*M_PI/180)*5)+5);
+            if (add_garbage && rand() <= RAND_MAX / 5)
+                buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
+        }
         if (chunked) {
             size_t send_pos = 0;
             while (buffer_pos - send_pos >= 16) {
