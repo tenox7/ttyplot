@@ -69,6 +69,7 @@ double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 bool fake_clock = false;
+char *errstr = NULL;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 void usage(void) {
@@ -322,9 +323,115 @@ void redraw_screen(const char * errstr) {
     refresh();
 }
 
+// Return a pointer to the last occurrence within [s, s+n) of one of the bytes in the string accept.
+char *find_last(char *s, size_t n, const char *accept)
+{
+    for (int pos = n - 1; pos >= 0; pos--) {
+        if (strchr(accept, s[pos]))
+            return s + pos;
+    }
+    return NULL;  // not found
+}
+
+// Handle a single value from the input stream.
+// Return whether we got a full data record.
+bool handle_value(double value)
+{
+    static double saved_value;
+    static int saved_value_valid = 0;
+
+    // First value of a 2-value record: save it for later.
+    if (two && !saved_value_valid) {
+        saved_value = value;
+        saved_value_valid = 1;
+        return false;
+    }
+
+    // Otherwise we have a full record.
+    n = (n+1) % plotwidth;
+    if (two) {
+        values1[n] = saved_value;
+        values2[n] = value;
+        saved_value_valid = 0;
+    } else {
+        values1[n] = value;
+    }
+    if (rate)
+        td = derivative(&values1[n], two ? &values2[n] : NULL, &now);
+    return true;
+}
+
+// Handle a chunk of input data: extract the numbers, store them, redraw if needed.
+// Return the number of bytes consumed.
+size_t handle_input_data(char *buffer, size_t length)
+{
+    static const char delimiters[] = " \t\r\n";  // white space
+
+    // Find the last delimiter.
+    char *end = find_last(buffer, length, delimiters);
+    if (!end)
+        return 0;
+    *end = '\0';
+
+    // Tokenize and parse.
+    int records = 0;  // number or records found
+    char *str = buffer;
+    char *token;
+    while ((token = strtok(str, delimiters)) != NULL) {
+        char *number_end;
+        double value = strtod(token, &number_end);
+        if (*number_end != '\0')  // garbage found
+            value = 0;
+        if (handle_value(value))
+            records++;
+        str = NULL;  // tell strtok() to stay on the same string
+    }
+    v += records;
+    if (records > 0)
+        redraw_screen(errstr);
+    return end - buffer + 1;
+}
+
+// Handle an "input ready" event, where only a single read() is guaranteed to not block.
+// Return whether the input stream got closed.
+bool handle_input_event(void)
+{
+    static char buffer[4096];
+    static size_t buffer_pos = 0;
+
+    // Buffer incoming data.
+    ssize_t bytes_read = read(STDIN_FILENO, buffer + buffer_pos, sizeof(buffer) - 1 - buffer_pos);
+    if (bytes_read < 0) {  // read error
+        if (errno == EINTR || errno == EAGAIN)  // we should try again later
+            return false;
+        errstr = strerror(errno);  // other errors are considered fatal
+        return true;
+    }
+    if (bytes_read == 0) {
+        errstr = "input stream closed";
+        buffer[buffer_pos++] = '\n';  // attempt to extract one last value
+        handle_input_data(buffer, buffer_pos);
+        redraw_screen(errstr);  // redraw to display the error message
+        return true;
+    }
+    buffer_pos += bytes_read;
+
+    // Handle this new data.
+    size_t bytes_consumed = handle_input_data(buffer, buffer_pos);
+
+    // If we have excessive garbage, discard a bunch. This is to ensure that we can always ask read for >= 1K bytes,
+    // and keep good performance, especially with high input pressure.
+    if (buffer_pos - bytes_consumed > sizeof(buffer) / 2)
+        bytes_consumed += sizeof(buffer) / 4;
+
+    if (bytes_consumed > 0 && bytes_consumed < buffer_pos)
+        memmove(buffer, buffer + bytes_consumed, buffer_pos - bytes_consumed);
+    buffer_pos -= bytes_consumed;
+    return false;
+}
+
 int main(int argc, char *argv[]) {
     int i;
-    char *errstr = NULL;
     bool stdin_is_open = true;
     int cached_opterr;
     const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
@@ -466,27 +573,7 @@ int main(int argc, char *argv[]) {
     signal(SIGWINCH, resize);
     signal(SIGINT, finish);
 
-    char input_buf[4096] = "";
-    size_t input_len = 0;
-
     while(1) {
-        if (sigint_pending) {
-            break;
-        }
-
-        if (sigwinch_pending) {
-            sigwinch_pending = 0;
-
-            endwin();
-            initscr();
-            clear();
-            refresh();
-
-            gethw();
-
-            goto redraw_and_continue;
-        }
-
         // Block until (a) we receive a signal or (b) stdin can be read without blocking
         // or (c) timeout expires, in order to reduce use of CPU and power while idle
         fd_set read_fds;
@@ -501,20 +588,27 @@ int main(int argc, char *argv[]) {
             if (tty >= select_nfds)
                 select_nfds = tty + 1;
         }
-        const bool previous_parse_succeeded = (r == (two ? 2 : 1));
-        struct timespec timeout;
-        timeout.tv_sec = 0;
-        if (previous_parse_succeeded) {
-            timeout.tv_nsec = 0;  // we may have more input pressing, let's not throttle it down
-        } else {
-            timeout.tv_nsec = 500 * 1000 * 1000;  // <=500 milliseconds for a healthy clock display
-        }
+        struct timespec timeout = { .tv_sec = 0, .tv_nsec = 500e6 };  // 500 milliseconds for refreshing the clock
         const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
-        const bool signal_received = ((select_ret == -1) && (errno == EINTR));
+        gettimeofday(&now, NULL);
 
-        if (signal_received) {
-            continue;  // i.e. skip right to signal handling
+        // Refresh the clock on timeouts.
+        if (select_ret == 0)
+            redraw_screen(errstr);
+
+        // Handle signals.
+        if (sigint_pending) {
+            break;
+        }
+        if (sigwinch_pending) {
+            sigwinch_pending = 0;
+            endwin();
+            initscr();
+            erase();
+            refresh();
+            gethw();
+            redraw_screen(errstr);
         }
 
         // Handle user's keystrokes.
@@ -532,131 +626,14 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        const bool stdin_can_be_read_without_blocking = ((select_ret > 0) && FD_ISSET(STDIN_FILENO, &read_fds));
-
-        // Read as much from stdin as we can (first read after select is non-blocking)
-        if (stdin_can_be_read_without_blocking) {
-            // Last resort: truncate existing input if input line ever is
-            //              too long
-            if (input_len >= sizeof(input_buf) - 1 /* terminator */) {
-                input_len = 0;
-            }
-
-            char * const read_target = input_buf + input_len;
-            const size_t max_bytes_to_read = sizeof(input_buf) - (input_len + 1 /* terminator */);
-            const ssize_t bytes_read_or_error = read(STDIN_FILENO, read_target, max_bytes_to_read);
-
-            if (bytes_read_or_error > 0) {
-                input_len += bytes_read_or_error;
-                assert(input_len < sizeof(input_buf));
-                input_buf[input_len] = '\0';
-            } else {
-                assert(bytes_read_or_error <= 0);
-                if (bytes_read_or_error == 0) {
-                    close(STDIN_FILENO);
-                    errstr = "input stream closed";
-                    stdin_is_open = false;
-                } else {
-                    assert(bytes_read_or_error == -1);
-                    if ((errno != EINTR) && (errno != EAGAIN)) {
-                        errstr = strerror(errno);
-                        stdin_is_open = false;
-                    }
-                }
+        // Handle input data.
+        if (select_ret > 0 && FD_ISSET(STDIN_FILENO, &read_fds)) {
+            bool input_closed = handle_input_event();
+            if (input_closed) {
+                close(STDIN_FILENO);
+                stdin_is_open = false;
             }
         }
-
-        // Extract values from record; note that the record may turn out incomplete
-        double d1 = 0.0;
-        double d2 = 0.0;
-        int record_len = -1;
-
-        if(two)
-            r = sscanf(input_buf, "%lf %lf%*[ \t\r\n]%n", &d1, &d2, &record_len);
-        else
-            r = sscanf(input_buf, "%lf%*[ \t\r\n]%n", &d1, &record_len);
-
-        // We need to detect and avoid mis-parsing "1.23" as two records "1.2" and "3"
-        const bool supposedly_complete_record = (r == (two ? 2 : 1));
-        const bool trailing_whitespace_present = (record_len != -1);
-
-        if (supposedly_complete_record && ! trailing_whitespace_present) {
-            const bool need_more_input = stdin_is_open;
-            if (need_more_input) {
-                r = 0;  // so that the parse is not mis-classified as a success further up
-                goto redraw_and_continue;
-            }
-
-            record_len = input_len;  // i.e. the whole thing
-        }
-
-        // In order to not get stuck with non-doubles garbage input forever,
-        // we need to drop input that we know(!) will never parse as doubles later.
-        if (! supposedly_complete_record && (input_len > 0)) {
-            char * walker = input_buf;
-
-            while (isspace(*walker)) walker++;  // skip leading whitespace (if any)
-
-            while ((*walker != '\0') && ! isspace(*walker)) walker++;  // skip non-double
-
-            if (two) {
-                if (*walker == '\0') {
-                    goto redraw_and_continue;
-                }
-
-                while (isspace(*walker)) walker++;  // skip gap whitespace
-
-                if (*walker == '\0') {
-                    goto redraw_and_continue;
-                }
-
-                while ((*walker != '\0') && ! isspace(*walker)) walker++;  // skip non-double
-            }
-
-            if (*walker == '\0') {
-                goto redraw_and_continue;
-            }
-
-            while (isspace(*walker)) walker++;  // skip trailing whitespace (if any)
-
-            record_len = walker - input_buf;  // i.e. how much to drop
-        }
-
-        // Drop the record that we just processed (well-formed or not) from the input buffer
-        if ((input_len > 0) && (record_len > 0)) {
-            char * move_source = input_buf + record_len;
-            const size_t bytes_to_move = input_len - record_len;
-            memmove(input_buf, move_source, bytes_to_move);
-            input_len = bytes_to_move;
-            input_buf[input_len] = '\0';
-        }
-
-        if (! supposedly_complete_record) {
-            goto redraw_and_continue;
-        }
-
-        v++;
-
-        if (n < plotwidth - 1)
-            n++;
-        else
-            n=0;
-
-        values1[n] = d1;
-        values2[n] = d2;
-
-        if(values1[n] < 0)
-            values1[n] = 0;
-        if(values2[n] < 0)
-            values2[n] = 0;
-
-        gettimeofday(&now, NULL);
-        if (rate)
-            td=derivative(&values1[n], two ? &values2[n] : NULL, &now);
-
-redraw_and_continue:
-        gettimeofday(&now, NULL);
-        redraw_screen(errstr);
     }
 
     endwin();
