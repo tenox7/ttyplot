@@ -85,7 +85,7 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: |-
-          CFLAGS='-std=gnu99 -pedantic -Werror' make all stresstest
+          CFLAGS='-std=gnu99 -pedantic -Werror' make
 
       - name: 'Install'
         run: |-

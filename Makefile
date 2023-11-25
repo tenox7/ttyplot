@@ -6,7 +6,7 @@ CFLAGS += `pkg-config --cflags ncursesw`
 LDLIBS += `pkg-config --libs ncursesw`
 stresstest: LDLIBS = -lm
 
-all: ttyplot
+all: ttyplot stresstest
 
 install: ttyplot ttyplot.1
 	install -d $(DESTDIR)$(PREFIX)/bin
