@@ -4,10 +4,40 @@ import (
 	"container/ring"
 	"fmt"
 	"io"
+	"sync"
 )
 
+type data struct {
+	r *ring.Ring
+	sync.Mutex
+}
+
+func newData(n int) *data {
+	d := new(data)
+	d.r = ring.New(n)
+	return d
+}
+
+func (d *data) push(l float64) {
+	d.Lock()
+	defer d.Unlock()
+	d.r.Value = l
+	d.r = d.r.Next()
+}
+
+func (d *data) dump() {
+	d.Lock()
+	defer d.Unlock()
+	fmt.Print("[ ")
+	d.r.Do(func(p any) {
+		fmt.Print(p, " ")
+	})
+	fmt.Println(" ]")
+}
+
 func main() {
-	r := ring.New(20)
+	d := newData(20)
+
 	for {
 		var l float64
 		n, err := fmt.Scan(&l)
@@ -17,12 +47,7 @@ func main() {
 			}
 			continue
 		}
-		r.Value = l
-		r = r.Next()
-		fmt.Print("[ ")
-		r.Do(func(p any) {
-			fmt.Print(p, " ")
-		})
-		fmt.Println(" ]")
+		d.push(l)
+		d.dump()
 	}
 }
