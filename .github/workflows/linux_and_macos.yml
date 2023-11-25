@@ -149,7 +149,18 @@ jobs:
             assert_images_equal_enough ${actual} ${expected} ${diff} || error=1
           done
 
-          rm -fv actual*.* diff*.*
+          rm -f actual*.* diff*.*
+
+          cat <<"EOF"
+            ################################################################
+            ## If this step FAILS you can get the expected images
+            ## back in sync with reality by running:
+            ##
+            ##   $ ./recordings/get_back_in_sync.sh
+            ##
+            ## More details on the topic can be found in CONTRIBUTING.md .
+            ################################################################
+          EOF
 
           exit ${error}
 
