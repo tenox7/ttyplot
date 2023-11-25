@@ -2,7 +2,8 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
-LDLIBS += `pkg-config --libs ncurses`
+CFLAGS += `pkg-config --cflags ncursesw`
+LDLIBS += `pkg-config --libs ncursesw`
 torture: LDLIBS = -lm
 
 all: ttyplot
