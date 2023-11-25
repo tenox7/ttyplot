@@ -354,7 +354,6 @@ int main(int argc, char *argv[]) {
                 break;
             case '2':
                 two=1;
-                plotchar.chars[0]='|';
                 break;
             case 'c':
                 mbtowc(&plotchar.chars[0], optarg, MB_CUR_MAX);
