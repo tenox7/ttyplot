@@ -203,7 +203,9 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 ## flags
 
 ```
-  ttyplot [-h] [-v] [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
+  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
+  ttyplot -h
+  ttyplot -v
 
   -2 read two values and draw two plots, the second one is in reverse video
   -r rate of a counter (divide value by measured sample interval)
