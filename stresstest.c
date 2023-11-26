@@ -13,7 +13,10 @@
 #include <math.h>
 
 const char help[] =
-    "Usage: %s [-h] [-2] [-c] [-g] [-r rate]\n"
+    "Usage:\n"
+    "  stresstest [-2] [-c] [-g] [-r rate]\n"
+    "  stresstest -h\n"
+    "\n"
     "  -h       print this help message and exit\n"
     "  -2       output two waves\n"
     "  -c       randomly chunk the output\n"
@@ -37,7 +40,7 @@ int main(int argc, char *argv[]) {
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
             case 'h':
-                printf(help, argv[0]);
+                printf(help);
                 return EXIT_SUCCESS;
             case '2':
                 two_waves = true;
@@ -55,12 +58,12 @@ int main(int argc, char *argv[]) {
                 seed = atoi(optarg);
                 break;
             default:
-                fprintf(stderr, help, argv[0]);
+                fprintf(stderr, help);
                 return EXIT_FAILURE;
         }
     }
     if (argc > optind) {
-        fprintf(stderr, help, argv[0]);
+        fprintf(stderr, help);
         return EXIT_FAILURE;
     }
 
