@@ -79,7 +79,8 @@ jobs:
         if: "${{ runner.os == 'Linux' && contains(matrix.cxx, 'clang') }}"
         run: |-
           sudo apt-get install --yes --no-install-recommends -V \
-              clang-${{ matrix.clang_major_version }}
+              clang-${{ matrix.clang_major_version }} \
+              libclang-rt-${{ matrix.clang_major_version }}-dev
 
       - name: Add versioned aliases for Clang ${{ matrix.clang_major_version }}
         if: "${{ runner.os == 'macOS' && contains(matrix.cxx, 'clang') }}"
@@ -96,7 +97,13 @@ jobs:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
         run: |-
-          CFLAGS='-std=gnu99 -pedantic -Werror' make
+          set -x
+
+          # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
+          # UBSan: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+          sanitizer='-fsanitize=address,undefined -fno-sanitize-recover=all'
+
+          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer}" LDFLAGS="${sanitizer}" make
 
       - name: 'Install'
         run: |-

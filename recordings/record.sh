@@ -27,7 +27,8 @@ rm -f actual*.*
 asciinema_args=(
     --cols 90
     --rows 20
-    -c 'timeout -s INT 3s sh -c "{ sleep 0.5; echo \"1 2 3 4\"; sleep 0.5; } | ttyplot -2 -c X"'
+    # MallocNanoZone=0 is for AddressSanitizer on macOS, see https://stackoverflow.com/a/70209891/11626624 .
+    -c 'timeout -s INT 3s sh -c "{ sleep 0.5; echo \"1 2 3 4\"; sleep 0.5; } | MallocNanoZone=0 ttyplot -2 -c X"'
     -t 'ttyplot waiting, drawing, and shutting down'
 )
 
