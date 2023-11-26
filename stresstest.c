@@ -1,5 +1,5 @@
 //
-// torture ttyplot
+// stresstest ttyplot
 //
 // License: Apache 2.0
 //
