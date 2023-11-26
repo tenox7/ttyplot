@@ -18,9 +18,10 @@ const char help[] =
     "  -2       output two waves\n"
     "  -c       randomly chunk the output\n"
     "  -g       occasionally output garbage\n"
-    "  -r rate  sample rate in samples/s (default: 100)\n";
+    "  -r rate  sample rate in samples/s (default: 100)\n"
+    "  -s seed  set random seed\n";
 
-const char optstring[] = "h2cgr:";
+const char optstring[] = "h2cgr:s:";
 
 int main(int argc, char *argv[]) {
     char buffer[1024];
@@ -30,6 +31,7 @@ int main(int argc, char *argv[]) {
     bool chunked = false;
     bool add_garbage = false;
     double rate = 100;
+    unsigned int seed = time(NULL);
 
     // Parse the command line.
     while ((opt = getopt(argc, argv, optstring)) != -1) {
@@ -49,6 +51,9 @@ int main(int argc, char *argv[]) {
             case 'r':
                 rate = atof(optarg);
                 break;
+            case 's':
+                seed = atoi(optarg);
+                break;
             default:
                 fprintf(stderr, help, argv[0]);
                 return EXIT_FAILURE;
@@ -60,6 +65,7 @@ int main(int argc, char *argv[]) {
     }
 
     const useconds_t delay = 1e6 / rate;
+    srand(seed);
 
     for (unsigned int n=0; ; n+=5) {
         buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
