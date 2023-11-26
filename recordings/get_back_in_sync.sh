@@ -12,7 +12,7 @@ cd "${self_dir}"
 
 if ! git diff --exit-code >/dev/null \
         || ! git diff --cached --exit-code >/dev/null ; then
-    echo 'ERROR: Please commit/stash your uncommited work first, aborting.' >&2
+    echo 'ERROR: Please commit/stash your uncommitted work first, aborting.' >&2
     exit 1
 fi
 
