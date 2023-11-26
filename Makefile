@@ -19,13 +19,10 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/ttyplot.1
 
 clean:
-	rm -f ttyplot stresstest *.o
+	rm -f ttyplot stresstest
 
-require_pkgconfig:
-	which pkg-config
+.c:
+	@pkg-config --version > /dev/null
+	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
-ttyplot.o: require_pkgconfig
-
-stresstest.o: require_pkgconfig
-
-.PHONY: all clean install uninstall require_pkgconfig
+.PHONY: all clean install uninstall
