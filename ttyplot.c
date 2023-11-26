@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
     }
 
     setlocale(LC_ALL, "");
-    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supprted:
+    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supported:
         plotchar.chars[0]=0x2502;  // U+2502 box drawings light vertical
     else
         plotchar.chars[0]='|';     // U+007C vertical line
