@@ -37,13 +37,9 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 5
-#define VERSION_PATCH 2
-#if VERSION_PATCH == 0
-    #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR)
-#else
-    #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
-#endif
+#define VERSION_MINOR 6
+#define VERSION_PATCH 0
+#define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 
 #define T_RARR '>'
 #define T_UARR '^'
