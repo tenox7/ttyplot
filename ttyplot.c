@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
     }
 
     setlocale(LC_ALL, "");
-    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supprted:
+    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supported:
         plotchar.chars[0]=0x2502;  // U+2502 box drawings light vertical
     else
         plotchar.chars[0]='|';     // U+007C vertical line
@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
         }
 
         // Block until (a) we receive a signal or (b) stdin can be read without blocking
-        // or (c) timeout expires, in oder to reduce use of CPU and power while idle
+        // or (c) timeout expires, in order to reduce use of CPU and power while idle
         fd_set read_fds;
         FD_ZERO(&read_fds);
         int select_nfds = 0;
