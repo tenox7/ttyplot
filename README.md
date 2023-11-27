@@ -265,4 +265,6 @@ by default in unix stdio is buffered, you can work around it in [various ways](h
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
 Copyright (c) 2019-2023 Google LLC
+Copyright (c) 2023 Edgar Bonet
+Copyright (c) 2023 Sebastian Pipping
 ```
