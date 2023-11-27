@@ -4,7 +4,13 @@ import (
 	"container/ring"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"sync"
+	"time"
+
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
 )
 
 type data struct {
@@ -35,19 +41,62 @@ func (d *data) dump() {
 	fmt.Println(" ]")
 }
 
-func main() {
-	d := newData(20)
+func (d *data) slice() (s []float64) {
+	d.Lock()
+	defer d.Unlock()
+	d.r.Do(func(p any) {
+		if p == nil {
+			s = append(s, 0)
+			return
+		}
+		s = append(s, p.(float64))
+	})
+	return
+}
 
+func readStdin(d *data) {
 	for {
 		var l float64
 		n, err := fmt.Scan(&l)
 		if err != nil || n == 0 {
 			if err == io.EOF {
-				break
+				os.Exit(0)
 			}
 			continue
 		}
 		d.push(l)
-		d.dump()
+	}
+}
+
+func main() {
+	err := ui.Init()
+	if err != nil {
+		log.Fatalf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+
+	l := widgets.NewSparkline()
+	l.LineColor = ui.ColorRed
+	l.TitleStyle.Fg = ui.ColorGreen
+	lg := widgets.NewSparklineGroup(l)
+	lg.SetRect(0, 0, 20, 5)
+	lg.Title = "sparkline"
+
+	d := newData(20)
+	go readStdin(d)
+
+	//uiEvents := ui.PollEvents()
+	ticker := time.NewTicker(time.Second).C
+	for {
+		select {
+		/*	case e := <-uiEvents:
+			switch e.ID {
+			case "q", "<C-c>":
+				return
+			} */
+		case <-ticker:
+			l.Data = d.slice()
+			ui.Render(lg)
+		}
 	}
 }
