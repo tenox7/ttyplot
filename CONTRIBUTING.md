@@ -42,10 +42,10 @@ On a Debian-based Linux including Ubuntu, you would need to install…
 ```console
 $ sudo apt-get update
 $ sudo apt-get install --no-install-recommends -V \
-    asciinema \
     ca-certificates \
     cargo \
-    fonts-liberation
+    fonts-liberation \
+    python3-venv
 $ cargo install --git https://github.com/asciinema/agg
 ```
 
