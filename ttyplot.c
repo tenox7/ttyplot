@@ -634,6 +634,7 @@ int main(int argc, char *argv[]) {
             td=derivative(&values1[n], two ? &values2[n] : NULL, &now);
 
 redraw_and_continue:
+        gettimeofday(&now, NULL);
         redraw_screen(errstr);
     }
 
