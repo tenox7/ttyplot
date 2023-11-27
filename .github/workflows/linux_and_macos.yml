@@ -70,7 +70,6 @@ jobs:
           brew tap homebrew/cask-fonts
           brew install \
             agg \
-            asciinema \
             coreutils \
             font-liberation \
             imagemagick
@@ -121,6 +120,7 @@ jobs:
         if: "${{ runner.os == 'macOS' }}"
         run: |-
           ./recordings/record.sh
+          rm -Rf recordings/venv/
 
       - name: 'Upload UI test renderings for inspection'
         if: "${{ runner.os == 'macOS' }}"

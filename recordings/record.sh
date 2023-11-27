@@ -18,6 +18,11 @@ export FAKETIME=yesplease
 
 cd "${self_dir}"
 
+# Ensure recent asciinema with --cols and --rows argument support
+[[ -d venv/ ]] || python3 -m venv venv/
+source venv/bin/activate
+pip3 install asciinema==2.3.0
+
 # Check and report on runtime requirements
 which agg asciinema convert realpath timeout ttyplot
 
