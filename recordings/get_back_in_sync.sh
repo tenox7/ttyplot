@@ -6,6 +6,8 @@
 
 set -e -u
 
+: ${MAKE:=make}
+
 self_dir="$(dirname "$(type -P "$0")")"
 
 cd "${self_dir}"
@@ -16,7 +18,7 @@ if ! git diff --exit-code >/dev/null \
     exit 1
 fi
 
-make -C ..  # to ensure up-to-date ttyplot binary
+"${MAKE}" -C ..  # to ensure up-to-date ttyplot binary
 
 ./record.sh
 
