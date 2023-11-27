@@ -2,7 +2,7 @@
 
 lets see if would be easier to implement ttyplot in Go, rather than deal with C, Ncurses and async IO
 
-## things to try
+## ui frameworks to try
 
 - https://github.com/gizak/termui
 - https://github.com/nsf/termbox-go
