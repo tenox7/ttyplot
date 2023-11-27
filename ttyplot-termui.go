@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,14 +33,16 @@ func (d *data) push(l float64) {
 	d.r = d.r.Next()
 }
 
-func (d *data) dump() {
+func (d *data) string() string {
 	d.Lock()
 	defer d.Unlock()
-	fmt.Print("[ ")
+	s := strings.Builder{}
+	fmt.Fprint(&s, "[")
 	d.r.Do(func(p any) {
-		fmt.Print(p, " ")
+		fmt.Fprint(&s, p, " ")
 	})
-	fmt.Println(" ]")
+	fmt.Fprint(&s, " ]")
+	return s.String()
 }
 
 func (d *data) slice() (s []float64) {
@@ -60,8 +63,8 @@ func readStdin(d *data) {
 		var l float64
 		n, err := fmt.Scan(&l)
 		if err != nil || n == 0 {
+			os.Exit(0)
 			if err == io.EOF {
-				os.Exit(0)
 			}
 			continue
 		}
@@ -76,28 +79,33 @@ func main() {
 	}
 	defer ui.Close()
 
+	p := widgets.NewParagraph()
+	p.Title = "Dump"
+	p.SetRect(0, 0, 60, 5)
+
 	l := widgets.NewSparkline()
 	l.LineColor = ui.ColorRed
 	l.TitleStyle.Fg = ui.ColorGreen
 	lg := widgets.NewSparklineGroup(l)
-	lg.SetRect(0, 0, 20, 5)
-	lg.Title = "sparkline"
+	lg.SetRect(0, 15, 20, 5)
+	lg.Title = "Sparkline"
 
 	d := newData(20)
 	go readStdin(d)
 
-	//uiEvents := ui.PollEvents()
+	uiEvents := ui.PollEvents()
 	ticker := time.NewTicker(time.Second).C
 	for {
 		select {
-		/*	case e := <-uiEvents:
+		case e := <-uiEvents:
 			switch e.ID {
 			case "q", "<C-c>":
 				return
-			} */
+			}
 		case <-ticker:
+			p.Text = d.string()
 			l.Data = d.slice()
-			ui.Render(lg)
+			ui.Render(p, lg)
 		}
 	}
 }
