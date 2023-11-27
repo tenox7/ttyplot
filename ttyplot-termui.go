@@ -3,10 +3,10 @@ package main
 
 import (
 	"container/ring"
+	"errors"
 	"fmt"
-	"io"
 	"log"
-	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -59,13 +59,15 @@ func (d *data) slice() (s []float64) {
 }
 
 func readStdin(d *data) {
+	// TODO: handle EOF here, do a text scanner instead of fmt.Scan()
 	for {
 		var l float64
 		n, err := fmt.Scan(&l)
+		if errors.Is(err, strconv.ErrSyntax) {
+			log.Fatalln(err)
+		}
 		if err != nil || n == 0 {
-			os.Exit(0)
-			if err == io.EOF {
-			}
+			log.Println(err)
 			continue
 		}
 		d.push(l)
@@ -87,7 +89,7 @@ func main() {
 	l.LineColor = ui.ColorRed
 	l.TitleStyle.Fg = ui.ColorGreen
 	lg := widgets.NewSparklineGroup(l)
-	lg.SetRect(0, 15, 20, 5)
+	lg.SetRect(0, 15, 25, 5)
 	lg.Title = "Sparkline"
 
 	d := newData(20)
@@ -99,7 +101,7 @@ func main() {
 		select {
 		case e := <-uiEvents:
 			switch e.ID {
-			case "q", "<C-c>":
+			case "q", "<C-c>": // this doesnt work ¯\_(ツ)_/¯
 				return
 			}
 		case <-ticker:
