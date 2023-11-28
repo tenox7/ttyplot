@@ -3,8 +3,7 @@ PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
 CFLAGS += `pkg-config --cflags ncursesw`
-LDLIBS += `pkg-config --libs ncursesw`
-stresstest: LDLIBS = -lm
+LDLIBS += `pkg-config --libs ncursesw` -lm
 
 all: ttyplot stresstest
 
