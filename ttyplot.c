@@ -54,7 +54,6 @@
 #endif
 
 sigset_t block_sigset;
-sigset_t empty_sigset;
 volatile sig_atomic_t sigint_pending = 0;
 volatile sig_atomic_t sigwinch_pending = 0;
 cchar_t plotchar, max_errchar, min_errchar;
@@ -295,7 +294,9 @@ void redraw_screen(const char * errstr) {
         show_window_size_error();
     }
 
+    sigprocmask(SIG_BLOCK, &block_sigset, NULL);
     refresh();
+    sigprocmask(SIG_UNBLOCK, &block_sigset, NULL);
 }
 
 int main(int argc, char *argv[]) {
@@ -434,8 +435,6 @@ int main(int argc, char *argv[]) {
         cbreak();
     }
 
-    sigemptyset(&empty_sigset);
-
     sigemptyset(&block_sigset);
     sigaddset(&block_sigset, SIGINT);
     sigaddset(&block_sigset, SIGWINCH);
@@ -455,10 +454,12 @@ int main(int argc, char *argv[]) {
         if (sigwinch_pending) {
             sigwinch_pending = 0;
 
+            sigprocmask(SIG_BLOCK, &block_sigset, NULL);
             endwin();
             initscr();
             clear();
             refresh();
+            sigprocmask(SIG_UNBLOCK, &block_sigset, NULL);
 
             gethw();
 
@@ -480,14 +481,14 @@ int main(int argc, char *argv[]) {
                 select_nfds = tty + 1;
         }
         const bool previous_parse_succeeded = (r == (two ? 2 : 1));
-        struct timespec timeout;
+        struct timeval timeout;
         timeout.tv_sec = 0;
         if (previous_parse_succeeded) {
-            timeout.tv_nsec = 0;  // we may have more input pressing, let's not throttle it down
+            timeout.tv_usec = 0;  // we may have more input pressing, let's not throttle it down
         } else {
-            timeout.tv_nsec = 500 * 1000 * 1000;  // <=500 milliseconds for a healthy clock display
+            timeout.tv_usec = 500 * 1000;  // <=500 milliseconds for a healthy clock display
         }
-        const int select_ret = pselect(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
+        const int select_ret = select(select_nfds, &read_fds, NULL, NULL, &timeout);
 
         const bool signal_received = ((select_ret == -1) && (errno == EINTR));
 
@@ -637,6 +638,9 @@ redraw_and_continue:
         redraw_screen(errstr);
     }
 
+    sigprocmask(SIG_BLOCK, &block_sigset, NULL);
     endwin();
+    sigprocmask(SIG_UNBLOCK, &block_sigset, NULL);
+
     return 0;
 }
