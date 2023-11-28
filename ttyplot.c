@@ -70,6 +70,7 @@ double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 bool fake_clock = false;
 char *errstr = NULL;
+bool redraw_needed = false;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 void usage(void) {
@@ -388,7 +389,7 @@ size_t handle_input_data(char *buffer, size_t length)
     }
     v += records;
     if (records > 0)
-        redraw_screen(errstr);
+        redraw_needed = true;
     return end - buffer + 1;
 }
 
@@ -405,13 +406,14 @@ bool handle_input_event(void)
         if (errno == EINTR || errno == EAGAIN)  // we should try again later
             return false;
         errstr = strerror(errno);  // other errors are considered fatal
+        redraw_needed = true;  // redraw to display the error message
         return true;
     }
     if (bytes_read == 0) {
         errstr = "input stream closed";
         buffer[buffer_pos++] = '\n';  // attempt to extract one last value
         handle_input_data(buffer, buffer_pos);
-        redraw_screen(errstr);  // redraw to display the error message
+        redraw_needed = true;  // redraw to display the error message
         return true;
     }
     buffer_pos += bytes_read;
@@ -595,7 +597,7 @@ int main(int argc, char *argv[]) {
 
         // Refresh the clock on timeouts.
         if (select_ret == 0)
-            redraw_screen(errstr);
+            redraw_needed = true;
 
         // Handle signals.
         if (sigint_pending) {
@@ -608,7 +610,7 @@ int main(int argc, char *argv[]) {
             erase();
             refresh();
             gethw();
-            redraw_screen(errstr);
+            redraw_needed = true;
         }
 
         // Handle user's keystrokes.
@@ -633,6 +635,12 @@ int main(int argc, char *argv[]) {
                 close(STDIN_FILENO);
                 stdin_is_open = false;
             }
+        }
+
+        // Refresh the screen if needed.
+        if (redraw_needed) {
+            redraw_screen(errstr);
+            redraw_needed = false;
         }
     }
 
