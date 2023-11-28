@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   linux:
-    name: Build (${{ matrix.cc }} on ${{ matrix.runs-on }})
+    name: Build (${{ matrix.cc }}/${{ matrix.make }} on ${{ matrix.runs-on }})
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -26,26 +26,37 @@ jobs:
             cxx: g++-13
             clang_major_version: null
             clang_repo_suffix: null
+            make: make
             runs-on: ubuntu-22.04
           - cc: clang-17
             cxx: clang++-17
             clang_major_version: 17
             clang_repo_suffix: -17
+            make: bmake
             runs-on: ubuntu-22.04
           - cc: clang-18
             cxx: clang++-18
             clang_major_version: 18
             clang_repo_suffix:
+            make: bmake
             runs-on: ubuntu-22.04
+          - cc: gcc-11
+            cxx: g++-11
+            clang_major_version: null
+            clang_repo_suffix: null
+            make: make
+            runs-on: macos-12
           - cc: gcc-13
             cxx: g++-13
             clang_major_version: null
             clang_repo_suffix: null
+            make: bmake
             runs-on: macos-12
           - cc: clang-15
             cxx: clang++-15
             clang_major_version: 15
             clang_repo_suffix: null
+            make: bsdmake
             runs-on: macos-12
     steps:
       - name: Add Clang/LLVM repositories
@@ -61,6 +72,7 @@ jobs:
         run: |-
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
+            bmake \
             libncurses-dev \
             pkg-config
 
@@ -70,6 +82,8 @@ jobs:
           brew tap homebrew/cask-fonts
           brew install \
             agg \
+            bmake \
+            bsdmake \
             coreutils \
             font-liberation \
             imagemagick
@@ -95,25 +109,40 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
+          MAKE: ${{ matrix.make }}
         run: |-
           set -x
+
+          # macOS default linker does not seem to support --as-needed,
+          # would error out saying "ld: unknown option: --as-needed"
+          if [[ ${{ runner.os }} = macOS ]]; then
+            as_needed=
+          else
+            as_needed='-Wl,--as-needed'
+          fi
 
           # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
           # UBSan: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
           sanitizer='-fsanitize=address,undefined -fno-sanitize-recover=all'
 
-          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer}" LDFLAGS="${sanitizer}" make
+          ${MAKE} --version 2>/dev/null || true
+
+          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer}" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
 
       - name: 'Install'
+        env:
+          MAKE: ${{ matrix.make }}
         run: |-
           set -x -o pipefail
-          make install DESTDIR="${PWD}"/ROOT/
+          ${MAKE} install DESTDIR="${PWD}"/ROOT/
           find ROOT/ | sort | xargs ls -ld
 
       - name: 'Uninstall'
+        env:
+          MAKE: ${{ matrix.make }}
         run: |-
           set -x
-          make uninstall DESTDIR="${PWD}"/ROOT/
+          ${MAKE} uninstall DESTDIR="${PWD}"/ROOT/
           [[ "$(find ROOT/ -not -type d | tee /dev/stderr)" == '' ]]  # i.e. fail CI if leftover files
 
       - name: 'Run UI tests'
@@ -172,7 +201,9 @@ jobs:
           exit ${error}
 
       - name: 'Clean'
+        env:
+          MAKE: ${{ matrix.make }}
         run: |-
           set -x -o pipefail
-          make clean
+          ${MAKE} clean
           [[ "$(git ls-files -o | tee /dev/stderr | wc -l)" -eq 0 ]]
