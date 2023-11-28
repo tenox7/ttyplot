@@ -113,13 +113,21 @@ jobs:
         run: |-
           set -x
 
+          # macOS default linker does not seem to support --as-needed,
+          # would error out saying "ld: unknown option: --as-needed"
+          if [[ ${{ runner.os }} = macOS ]]; then
+            as_needed=
+          else
+            as_needed='-Wl,--as-needed'
+          fi
+
           # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
           # UBSan: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
           sanitizer='-fsanitize=address,undefined -fno-sanitize-recover=all'
 
           ${MAKE} --version 2>/dev/null || true
 
-          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer}" LDFLAGS="${sanitizer}" ${MAKE}
+          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer}" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
 
       - name: 'Install'
         env:
