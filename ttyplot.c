@@ -514,19 +514,18 @@ int main(int argc, char *argv[]) {
 
         // Read as much from stdin as we can (first read after select is non-blocking)
         if (stdin_can_be_read_without_blocking) {
+            // Last resort: truncate existing input if input line ever is
+            //              too long
+            if (input_len >= sizeof(input_buf) - 1 /* terminator */) {
+                input_len = 0;
+            }
+
             char * const read_target = input_buf + input_len;
             const size_t max_bytes_to_read = sizeof(input_buf) - (input_len + 1 /* terminator */);
             const ssize_t bytes_read_or_error = read(STDIN_FILENO, read_target, max_bytes_to_read);
 
             if (bytes_read_or_error > 0) {
                 input_len += bytes_read_or_error;
-
-                // Last resort: truncate existing input if input line ever is
-                //              too long
-                if (input_len >= sizeof(input_buf) - 1) {
-                    input_len = 0;
-                }
-
                 assert(input_len < sizeof(input_buf));
                 input_buf[input_len] = '\0';
             } else {
