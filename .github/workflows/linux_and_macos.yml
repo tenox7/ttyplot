@@ -81,12 +81,9 @@ jobs:
         run: |-
           brew tap homebrew/cask-fonts
           brew install \
-            agg \
             bmake \
             bsdmake \
-            coreutils \
-            font-liberation \
-            imagemagick
+            coreutils
 
       - name: Install build dependency Clang ${{ matrix.clang_major_version }}
         if: "${{ runner.os == 'Linux' && contains(matrix.cxx, 'clang') }}"
@@ -162,34 +159,12 @@ jobs:
       - name: 'Evaluate UI test results'
         if: "${{ runner.os == 'macOS' }}"
         run: |-
-          assert_images_equal_enough() {
-            local a="${1}"
-            local b="${2}"
-            local diff_output="${3}"
-            local dissimilarity="$(compare -metric DSSIM "${a}" "${b}" "${diff_output}" 2>&1)"
-            if ! python3 <<<"import sys; sys.exit(int(${dissimilarity} > 0.0022))"; then
-              echo "Image \"${a}\" is not close enough of a match to image \"${b}\", dissimilarity is ${dissimilarity}." >&2
-              return 1
-            fi
-            true
-          }
-
-          cd recordings/
-
-          error=0
-
-          for expected in expected*.png; do
-            actual=${expected/expected/actual}
-            diff=${expected/expected/diff}
-
-            assert_images_equal_enough ${actual} ${expected} ${diff} || error=1
-          done
-
-          rm -f actual*.* diff*.*
+          diff -u recordings/{expected,actual}.txt
+          rm -f recordings/actual.txt
 
           cat <<"EOF"
             ################################################################
-            ## If this step FAILS you can get the expected images
+            ## If this step FAILS you can get the expected ANSI screenshots
             ## back in sync with reality by running:
             ##
             ##   $ ./recordings/get_back_in_sync.sh
