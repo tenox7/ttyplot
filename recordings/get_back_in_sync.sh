@@ -22,17 +22,12 @@ fi
 
 ./record.sh
 
-for i in actual-*.png ; do
-    cp -v "${i}" "${i/actual/expected}"
-done
+cp actual.txt expected.txt
 
-if type -P zopflipng &>/dev/null; then
-    for i in expected-*.png ; do
-        # https://github.com/google/zopfli
-        zopflipng -y "${i}" "${i}"
-    done
+git add expected.txt
+
+if git diff --cached --exit-code >/dev/null ; then
+    echo 'Already in sync, good.'
+else
+    EDITOR=true git commit -m 'recordings: Sync expected.txt'
 fi
-
-git add expected-*.png
-
-EDITOR=true git commit -m 'recordings: Sync expected-*.png images'

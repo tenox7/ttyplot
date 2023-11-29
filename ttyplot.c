@@ -59,7 +59,6 @@ volatile sig_atomic_t sigint_pending = 0;
 volatile sig_atomic_t sigwinch_pending = 0;
 cchar_t plotchar, max_errchar, min_errchar;
 struct timeval now;
-struct timeval app_start;
 double td;
 struct tm *lt;
 double max=FLT_MIN;
@@ -69,6 +68,7 @@ double values1[1024]={0}, values2[1024]={0};
 double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+bool fake_clock = false;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 void usage(void) {
@@ -239,17 +239,15 @@ void paint_plot(void) {
 
     mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
-    if (app_start.tv_sec == 0) {
-        // display regular clock
-        lt = localtime(&now.tv_sec);
+    const char * clock_display;
+    if (fake_clock) {
+        clock_display = "Thu Jan  1 00:00:00 1970 ";
     } else {
-        // display fake clock starting "Thu Jan 1 00:00:00 1970"
-        const time_t with_app_start_at_epoch = now.tv_sec - app_start.tv_sec;
-        lt = gmtime(&with_app_start_at_epoch);
+        lt = localtime(&now.tv_sec);
+        asctime_r(lt, ls);
+        clock_display = ls;
     }
-
-    asctime_r(lt, ls);
-    mvaddstr(height-2, width-strlen(ls), ls);
+    mvaddstr(height-2, width-strlen(clock_display), clock_display);
 
     mvvline_set(height-2, 5, &plotchar, 1);
     if (v > 0) {
@@ -307,11 +305,9 @@ int main(int argc, char *argv[]) {
     int show_ver;
     int show_usage;
 
-    // To ease UI testing, display a clock starting at
-    // "Thu Jan 1 00:00:00 1970" when variable FAKETIME is set
-    if (getenv("FAKETIME") != NULL) {
-        gettimeofday(&app_start, NULL);
-    }
+    // To make UI testing more robust, we display a clock that is frozen at
+    // "Thu Jan  1 00:00:03 1970" when variable FAKETIME is set
+    fake_clock = (getenv("FAKETIME") != NULL);
 
     setlocale(LC_ALL, "");
     if (MB_CUR_MAX > 1)            // if non-ASCII characters are supported:
