@@ -280,6 +280,32 @@ void finish(int signum) {
     sigint_pending = 1;
 }
 
+int pselect_without_signal_starvation(
+        int nfds,
+        fd_set * readfds,
+        fd_set * writefds,
+        fd_set * exceptfds,
+        const struct timespec * timeout,
+        const sigset_t * sigmask) {
+    // With high pressure on file descriptors (e.g. with "ttyplot < /dev/zero")
+    // a call to `pselect` could stall signal delivery for 20+ seconds on Linux.
+    // To avoid that situation, we first do a call to `pselect` that is dedicated
+    // to signal delivery and that only.
+    // (Related: https://stackoverflow.com/q/62315082)
+    const struct timespec zero_timeout = { .tv_sec = 0, .tv_nsec = 0 };
+
+    // First call, signal delivery only
+    const int select_ret = pselect(0, NULL, NULL, NULL, &zero_timeout, sigmask);
+
+    const bool signal_received = ((select_ret == -1) && (errno == EINTR));
+    if (signal_received) {
+        return select_ret;
+    }
+
+    // Second call
+    return pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+}
+
 void redraw_screen(const char * errstr) {
     if (window_big_enough_to_draw()) {
         paint_plot();
@@ -483,7 +509,7 @@ int main(int argc, char *argv[]) {
         } else {
             timeout.tv_nsec = 500 * 1000 * 1000;  // <=500 milliseconds for a healthy clock display
         }
-        const int select_ret = pselect(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
+        const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
         const bool signal_received = ((select_ret == -1) && (errno == EINTR));
 
