@@ -59,7 +59,6 @@ volatile sig_atomic_t sigint_pending = 0;
 volatile sig_atomic_t sigwinch_pending = 0;
 cchar_t plotchar, max_errchar, min_errchar;
 struct timeval now;
-struct timeval app_start;
 double td;
 struct tm *lt;
 double max=FLT_MIN;
@@ -239,15 +238,7 @@ void paint_plot(void) {
 
     mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
-    if (app_start.tv_sec == 0) {
-        // display regular clock
-        lt = localtime(&now.tv_sec);
-    } else {
-        // display fake clock starting "Thu Jan 1 00:00:00 1970"
-        const time_t with_app_start_at_epoch = now.tv_sec - app_start.tv_sec;
-        lt = gmtime(&with_app_start_at_epoch);
-    }
-
+    lt=localtime(&now.tv_sec);
     asctime_r(lt, ls);
     mvaddstr(height-2, width-strlen(ls), ls);
 
@@ -306,12 +297,6 @@ int main(int argc, char *argv[]) {
     const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
     int show_ver;
     int show_usage;
-
-    // To ease UI testing, display a clock starting at
-    // "Thu Jan 1 00:00:00 1970" when variable FAKETIME is set
-    if (getenv("FAKETIME") != NULL) {
-        gettimeofday(&app_start, NULL);
-    }
 
     setlocale(LC_ALL, "");
     if (MB_CUR_MAX > 1)            // if non-ASCII characters are supported:
