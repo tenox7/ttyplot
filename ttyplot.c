@@ -115,6 +115,9 @@ double derivative(double *v1, double *v2, const struct timeval *now)
             *v1 = 0;
         else
             *v1 = dv1 / dt;
+
+        if (*v1 < 0)  // not before proper support (issue #53: "support negative values")
+            *v1 = 0;
     }
     if (v2) {
         const double dv2 = *v2 - previous_v2;
@@ -123,6 +126,9 @@ double derivative(double *v1, double *v2, const struct timeval *now)
             *v2 = 0;
         else
             *v2 = dv2 / dt;
+
+        if (*v2 < 0)  // not before proper support (issue #53: "support negative values")
+            *v2 = 0;
     }
     return dt;
 }
@@ -387,6 +393,8 @@ size_t handle_input_data(char *buffer, size_t length)
         if (*number_end != '\0')  // garbage found
             value = 0;
         if (! isfinite(value))
+            value = 0;
+        if (value < 0)  // not before proper support (issue #53: "support negative values")
             value = 0;
         if (handle_value(value))
             records++;
