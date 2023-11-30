@@ -14,6 +14,7 @@
 
 #include <assert.h>
 #include <ctype.h>  // isspace
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -384,6 +385,8 @@ size_t handle_input_data(char *buffer, size_t length)
         char *number_end;
         double value = strtod(token, &number_end);
         if (*number_end != '\0')  // garbage found
+            value = 0;
+        if (! isfinite(value))
             value = 0;
         if (handle_value(value))
             records++;
