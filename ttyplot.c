@@ -421,6 +421,15 @@ bool handle_input_event(void)
         redraw_needed = true;  // redraw to display the error message
         return true;
     }
+
+    // The data we read could contain null bytes, so we replace those
+    // by one of the supported delimiters to not lose all input coming after.
+    for (size_t i = buffer_pos; i < buffer_pos + bytes_read; i++) {
+        if (buffer[i] == '\0') {
+            buffer[i] = ' ';
+        }
+    }
+
     buffer_pos += bytes_read;
 
     // Handle this new data.
