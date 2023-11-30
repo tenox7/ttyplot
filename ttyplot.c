@@ -255,8 +255,10 @@ void paint_plot(void) {
         if(rate)
             printw(" interval=%.3gs", td);
 
-        if(two) {
-            mvaddch(height-1, 5, ' '|A_REVERSE);
+    }
+    if (two) {
+        mvaddch(height-1, 5, ' '|A_REVERSE);
+        if (v > 0) {
             mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
         }
     }
