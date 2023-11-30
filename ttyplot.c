@@ -68,7 +68,7 @@ static char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
 static double values1[1024]={0}, values2[1024]={0};
 static double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
 static double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
-static int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+static int width=0, height=0, n=-1, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
