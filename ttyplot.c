@@ -160,10 +160,12 @@ static void gethw(void) {
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
-    mvprintw(1, 4, "%.1f %s", max, unit);
-    mvprintw((ph/4)+1, 4, "%.1f %s", min/4 + max*3/4, unit);
-    mvprintw((ph/2)+1, 4, "%.1f %s", min/2 + max/2, unit);
-    mvprintw((ph*3/4)+1, 4, "%.1f %s", min*3/4 + max/4, unit);
+    if (max - min >= 0.1) {
+        mvprintw(1, 4, "%.1f %s", max, unit);
+        mvprintw((ph/4)+1, 4, "%.1f %s", min/4 + max*3/4, unit);
+        mvprintw((ph/2)+1, 4, "%.1f %s", min/2 + max/2, unit);
+        mvprintw((ph*3/4)+1, 4, "%.1f %s", min*3/4 + max/4, unit);
+    }
     mvaddch(h-3, 2+pw, T_RARR);
     mvaddch(1, 2, T_UARR);
     mvaddch(h-3, 2, T_LLCR);
