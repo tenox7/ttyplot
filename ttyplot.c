@@ -54,10 +54,7 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
-static sigset_t block_sigset;
-static sigset_t empty_sigset;
-static volatile sig_atomic_t sigint_pending = 0;
-static volatile sig_atomic_t sigwinch_pending = 0;
+static int signal_read_fd, signal_write_fd;
 static cchar_t plotchar, max_errchar, min_errchar;
 static struct timeval now;
 static double td;
@@ -281,40 +278,12 @@ static void paint_plot(void) {
     move(0,0);
 }
 
-static void resize(int signum) {
-    (void)signum;
-    sigwinch_pending = 1;
-}
-
-static void finish(int signum) {
-    (void)signum;
-    sigint_pending = 1;
-}
-
-static int pselect_without_signal_starvation(
-        int nfds,
-        fd_set * readfds,
-        fd_set * writefds,
-        fd_set * exceptfds,
-        const struct timespec * timeout,
-        const sigset_t * sigmask) {
-    // With high pressure on file descriptors (e.g. with "ttyplot < /dev/zero")
-    // a call to `pselect` could stall signal delivery for 20+ seconds on Linux.
-    // To avoid that situation, we first do a call to `pselect` that is dedicated
-    // to signal delivery and that only.
-    // (Related: https://stackoverflow.com/q/62315082)
-    const struct timespec zero_timeout = { .tv_sec = 0, .tv_nsec = 0 };
-
-    // First call, signal delivery only
-    const int select_ret = pselect(0, NULL, NULL, NULL, &zero_timeout, sigmask);
-
-    const bool signal_received = ((select_ret == -1) && (errno == EINTR));
-    if (signal_received) {
-        return select_ret;
-    }
-
-    // Second call
-    return pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+// Send signals through a pipe, in order to catch them without race conditions.
+// pselect() could be an alternative, but it is unreliable on Linux.
+// (Related: https://stackoverflow.com/q/62315082)
+static void signal_handler(int signum) {
+    const unsigned char signal_number = (unsigned char) signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
+    write(signal_write_fd, &signal_number, 1);
 }
 
 static void redraw_screen(const char * errstr) {
@@ -585,25 +554,28 @@ int main(int argc, char *argv[]) {
         cbreak();
     }
 
-    sigemptyset(&empty_sigset);
+    signal(SIGWINCH, signal_handler);
+    signal(SIGINT, signal_handler);
 
-    sigemptyset(&block_sigset);
-    sigaddset(&block_sigset, SIGINT);
-    sigaddset(&block_sigset, SIGWINCH);
-    sigprocmask(SIG_BLOCK, &block_sigset, NULL);
-
-    signal(SIGWINCH, resize);
-    signal(SIGINT, finish);
+    int signal_fds[2];
+    if (pipe(signal_fds) != 0) {
+        perror("pipe");
+        exit(1);
+    }
+    signal_read_fd = signal_fds[0];
+    signal_write_fd = signal_fds[1];
 
     while(1) {
         // Block until (a) we receive a signal or (b) stdin can be read without blocking
         // or (c) timeout expires, in order to reduce use of CPU and power while idle
         fd_set read_fds;
         FD_ZERO(&read_fds);
-        int select_nfds = 0;
+        FD_SET(signal_read_fd, &read_fds);
+        int select_nfds = signal_read_fd + 1;
         if (stdin_is_open) {
             FD_SET(STDIN_FILENO, &read_fds);
-            select_nfds = STDIN_FILENO + 1;
+            if (STDIN_FILENO >= select_nfds)
+                select_nfds = STDIN_FILENO + 1;
         }
         if (tty != -1) {
             FD_SET(tty, &read_fds);
@@ -611,13 +583,13 @@ int main(int argc, char *argv[]) {
                 select_nfds = tty + 1;
         }
         // Refresh the clock on the next full second.
-        const int nanoseconds_per_second = 1e9;
-        const int nanoseconds_remaining = nanoseconds_per_second - now.tv_usec * 1000;
-        struct timespec timeout = {
-            .tv_sec = nanoseconds_remaining / nanoseconds_per_second,
-            .tv_nsec = nanoseconds_remaining % nanoseconds_per_second
+        const int microseconds_per_second = 1e6;
+        const int microseconds_remaining = microseconds_per_second - now.tv_usec;
+        struct timeval timeout = {
+            .tv_sec = microseconds_remaining / microseconds_per_second,
+            .tv_usec = microseconds_remaining % microseconds_per_second
         };
-        const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
+        const int select_ret = select(select_nfds, &read_fds, NULL, NULL, &timeout);
 
         gettimeofday(&now, NULL);
 
@@ -626,17 +598,21 @@ int main(int argc, char *argv[]) {
             redraw_needed = true;
 
         // Handle signals.
-        if (sigint_pending) {
-            break;
-        }
-        if (sigwinch_pending) {
-            sigwinch_pending = 0;
-            endwin();
-            initscr();
-            erase();
-            refresh();
-            gethw();
-            redraw_needed = true;
+        if (select_ret > 0 && FD_ISSET(signal_read_fd, &read_fds)) {
+            unsigned char signal_number;
+            const ssize_t count = read(signal_read_fd, &signal_number, 1);
+            if (count > 0) {
+                if (signal_number == SIGINT)
+                    break;
+                if (signal_number == SIGWINCH) {
+                    endwin();
+                    initscr();
+                    erase();
+                    refresh();
+                    gethw();
+                    redraw_needed = true;
+                }
+            }
         }
 
         // Handle user's keystrokes.
