@@ -29,6 +29,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef __linux__
+#include <sys/signalfd.h>
+#endif
 #include <fcntl.h>
 
 #ifdef __OpenBSD__
@@ -285,32 +288,6 @@ static void resize(int signum) {
 static void finish(int signum) {
     (void)signum;
     sigint_pending = 1;
-}
-
-static int pselect_without_signal_starvation(
-        int nfds,
-        fd_set * readfds,
-        fd_set * writefds,
-        fd_set * exceptfds,
-        const struct timespec * timeout,
-        const sigset_t * sigmask) {
-    // With high pressure on file descriptors (e.g. with "ttyplot < /dev/zero")
-    // a call to `pselect` could stall signal delivery for 20+ seconds on Linux.
-    // To avoid that situation, we first do a call to `pselect` that is dedicated
-    // to signal delivery and that only.
-    // (Related: https://stackoverflow.com/q/62315082)
-    const struct timespec zero_timeout = { .tv_sec = 0, .tv_nsec = 0 };
-
-    // First call, signal delivery only
-    const int select_ret = pselect(0, NULL, NULL, NULL, &zero_timeout, sigmask);
-
-    const bool signal_received = ((select_ret == -1) && (errno == EINTR));
-    if (signal_received) {
-        return select_ret;
-    }
-
-    // Second call
-    return pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
 }
 
 static void redraw_screen(const char * errstr) {
@@ -591,6 +568,15 @@ int main(int argc, char *argv[]) {
     signal(SIGWINCH, resize);
     signal(SIGINT, finish);
 
+    // On Linux, with high pressure on file descriptors (e.g. with "ttyplot < /dev/zero"),
+    // a call to `pselect` could stall signal delivery for 20+ seconds. signalfd() is then
+    // a more reliable way of catching the signals.
+    // (Related: https://stackoverflow.com/q/62315082)
+    int signals = -1;
+#ifdef __linux__
+    signals = signalfd(-1, &block_sigset, 0);
+#endif
+
     while(1) {
         // Block until (a) we receive a signal or (b) stdin can be read without blocking
         // or (c) timeout expires, in order to reduce use of CPU and power while idle
@@ -601,19 +587,38 @@ int main(int argc, char *argv[]) {
             FD_SET(STDIN_FILENO, &read_fds);
             select_nfds = STDIN_FILENO + 1;
         }
+        if (signals != -1) {
+            FD_SET(signals, &read_fds);
+            if (signals >= select_nfds)
+                select_nfds = signals + 1;
+        }
         if (tty != -1) {
             FD_SET(tty, &read_fds);
             if (tty >= select_nfds)
                 select_nfds = tty + 1;
         }
         struct timespec timeout = { .tv_sec = 0, .tv_nsec = 500e6 };  // 500 milliseconds for refreshing the clock
-        const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
+        const int select_ret = pselect(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
         gettimeofday(&now, NULL);
 
         // Refresh the clock on timeouts.
         if (select_ret == 0)
             redraw_needed = true;
+
+        // On Linux, catch signals that came through the signalfd file descriptor.
+#ifdef __linux__
+        if (select_ret > 0 && FD_ISSET(signals, &read_fds)) {
+            struct signalfd_siginfo siginfo;
+            int count = read(signals, &siginfo, sizeof(siginfo));
+            if (count > 0) {
+                if (siginfo.ssi_signo == SIGINT)
+                    sigint_pending = 1;
+                else if (siginfo.ssi_signo == SIGWINCH)
+                    sigwinch_pending = 1;
+            }
+        }
+#endif
 
         // Handle signals.
         if (sigint_pending) {
