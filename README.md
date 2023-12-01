@@ -225,6 +225,21 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 &nbsp;
 
 
+## key bindings
+
+
+when reading data from a pipe, ttyplot accepts the following commands typed at the terminal:
+
+```
+  q  quit
+  r  toggle rate mode
+```
+
+these commands do not work if the standard input is a terminal: in this case quit with <kbd>Ctrl</kbd>-<kbd>C</kbd>.
+
+&nbsp;
+&nbsp;
+
 
 ## frequently questioned answers
 

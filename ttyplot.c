@@ -91,7 +91,11 @@ static void usage(void) {
             "  -t title of the plot\n"
             "  -u unit displayed beside vertical bar\n"
             "  -v print the current version and exit\n"
-            "  -h print this help message and exit\n\n");
+            "  -h print this help message and exit\n"
+            "\n"
+            "Hotkeys:\n"
+            "   q quit\n"
+            "   r toggle rate mode\n");
 }
 
 static void version(void) {
