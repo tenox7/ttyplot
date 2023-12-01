@@ -156,9 +156,6 @@ jobs:
 
       - name: 'Evaluate UI test results'
         run: |-
-          diff -u recordings/{expected,actual}.txt
-          rm -f recordings/actual.txt
-
           cat <<"EOF"
             ################################################################
             ## If this step FAILS you can get the expected ANSI screenshots
@@ -170,7 +167,8 @@ jobs:
             ################################################################
           EOF
 
-          exit ${error}
+          diff -u recordings/{expected,actual}.txt
+          rm -f recordings/actual.txt
 
       - name: 'Clean'
         env:
