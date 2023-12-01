@@ -54,27 +54,27 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
-sigset_t block_sigset;
-sigset_t empty_sigset;
-volatile sig_atomic_t sigint_pending = 0;
-volatile sig_atomic_t sigwinch_pending = 0;
-cchar_t plotchar, max_errchar, min_errchar;
-struct timeval now;
-double td;
-struct tm *lt;
-double max=FLT_MIN;
-double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
-char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
-double values1[1024]={0}, values2[1024]={0};
-double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
-double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
-int width=0, height=0, n=-1, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
-bool fake_clock = false;
-char *errstr = NULL;
-bool redraw_needed = false;
-const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
+static sigset_t block_sigset;
+static sigset_t empty_sigset;
+static volatile sig_atomic_t sigint_pending = 0;
+static volatile sig_atomic_t sigwinch_pending = 0;
+static cchar_t plotchar, max_errchar, min_errchar;
+static struct timeval now;
+static double td;
+static struct tm *lt;
+static double max=FLT_MIN;
+static double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
+static char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
+static double values1[1024]={0}, values2[1024]={0};
+static double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
+static double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
+static int width=0, height=0, n=-1, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+static bool fake_clock = false;
+static char *errstr = NULL;
+static bool redraw_needed = false;
+static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
-void usage(void) {
+static void usage(void) {
     printf("Usage:\n"
             "  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n"
             "  ttyplot -h\n"
@@ -94,7 +94,7 @@ void usage(void) {
             "  -h print this help message and exit\n\n");
 }
 
-void version(void) {
+static void version(void) {
     printf("ttyplot %s\n", VERSION_STR);
 }
 
@@ -102,7 +102,7 @@ void version(void) {
 //  - v1, v2: addresses of input data and storage for results
 //  - now: current time
 // Return time since previous call.
-double derivative(double *v1, double *v2, const struct timeval *now)
+static double derivative(double *v1, double *v2, const struct timeval *now)
 {
     static double previous_v1, previous_v2, previous_t = DBL_MAX;
     const double t = now->tv_sec + 1e-6 * now->tv_usec;
@@ -127,7 +127,7 @@ double derivative(double *v1, double *v2, const struct timeval *now)
     return dt;
 }
 
-void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
+static void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
     double tot=0;
     int i=0;
 
@@ -148,7 +148,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     *avg=tot/i;
 }
 
-void gethw(void) {
+static void gethw(void) {
     #ifdef NOGETMAXYX
     height=LINES;
     width=COLS;
@@ -157,7 +157,7 @@ void gethw(void) {
     #endif
 }
 
-void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
+static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
     mvprintw(1, 4, "%.1f %s", max, unit);
@@ -169,7 +169,7 @@ void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvaddch(h-3, 2, T_LLCR);
 }
 
-void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2, cchar_t *hce, cchar_t *lce) {
+static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2, cchar_t *hce, cchar_t *lce) {
     static cchar_t space = {
         .attr = A_REVERSE,
         .chars = {' ', '\0'}
@@ -188,7 +188,7 @@ void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2, cchar_t 
     }
 }
 
-void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
+static void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
     const int first_col=3;
     int i=(n+1)%pw;
     int x;
@@ -203,22 +203,22 @@ void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
                   hce, lce);
 }
 
-void show_all_centered(const char * message) {
+static void show_all_centered(const char * message) {
     const size_t message_len = strlen(message);
     const int x = ((int)message_len > width) ? 0 : (width/2 - (int)message_len/2);
     const int y = height/2;
     mvaddnstr(y, x, message, width);
 }
 
-int window_big_enough_to_draw(void) {
+static int window_big_enough_to_draw(void) {
     return (width >= 68) && (height >= 5);
 }
 
-void show_window_size_error(void) {
+static void show_window_size_error(void) {
     show_all_centered("Window too small...");
 }
 
-void paint_plot(void) {
+static void paint_plot(void) {
     erase();
     gethw();
 
@@ -275,17 +275,17 @@ void paint_plot(void) {
     move(0,0);
 }
 
-void resize(int signum) {
+static void resize(int signum) {
     (void)signum;
     sigwinch_pending = 1;
 }
 
-void finish(int signum) {
+static void finish(int signum) {
     (void)signum;
     sigint_pending = 1;
 }
 
-int pselect_without_signal_starvation(
+static int pselect_without_signal_starvation(
         int nfds,
         fd_set * readfds,
         fd_set * writefds,
@@ -311,7 +311,7 @@ int pselect_without_signal_starvation(
     return pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
 }
 
-void redraw_screen(const char * errstr) {
+static void redraw_screen(const char * errstr) {
     if (window_big_enough_to_draw()) {
         paint_plot();
 
@@ -328,7 +328,7 @@ void redraw_screen(const char * errstr) {
 }
 
 // Return a pointer to the last occurrence within [s, s+n) of one of the bytes in the string accept.
-char *find_last(char *s, size_t n, const char *accept)
+static char *find_last(char *s, size_t n, const char *accept)
 {
     for (int pos = n - 1; pos >= 0; pos--) {
         if (strchr(accept, s[pos]))
@@ -339,7 +339,7 @@ char *find_last(char *s, size_t n, const char *accept)
 
 // Handle a single value from the input stream.
 // Return whether we got a full data record.
-bool handle_value(double value)
+static bool handle_value(double value)
 {
     static double saved_value;
     static int saved_value_valid = 0;
@@ -367,7 +367,7 @@ bool handle_value(double value)
 
 // Handle a chunk of input data: extract the numbers, store them, redraw if needed.
 // Return the number of bytes consumed.
-size_t handle_input_data(char *buffer, size_t length)
+static size_t handle_input_data(char *buffer, size_t length)
 {
     static const char delimiters[] = " \t\r\n";  // white space
 
@@ -400,7 +400,7 @@ size_t handle_input_data(char *buffer, size_t length)
 
 // Handle an "input ready" event, where only a single read() is guaranteed to not block.
 // Return whether the input stream got closed.
-bool handle_input_event(void)
+static bool handle_input_event(void)
 {
     static char buffer[4096];
     static size_t buffer_pos = 0;
