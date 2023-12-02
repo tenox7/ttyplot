@@ -455,6 +455,7 @@ static bool handle_input_event(void)
 int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
+    time_t prev_paint_at_seconds = 0;
     int cached_opterr;
     const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
     int show_ver;
@@ -574,6 +575,7 @@ int main(int argc, char *argv[]) {
     gethw();
 
     redraw_screen(errstr);
+    prev_paint_at_seconds = now.tv_sec;
 
     // If stdin is redirected, open the terminal for reading user's keystrokes.
     int tty = -1;
@@ -610,7 +612,23 @@ int main(int argc, char *argv[]) {
             if (tty >= select_nfds)
                 select_nfds = tty + 1;
         }
-        struct timespec timeout = { .tv_sec = 0, .tv_nsec = 500e6 };  // 500 milliseconds for refreshing the clock
+
+        // Determine how long we can allow `select` to sleep.  The rules are:
+        // 1. If we find the system clock has already advanced on seconds level,
+        //    there should be no delay, we should get the clock redrawn asap.
+        // 2. Otherwise wait (more or less) exactly until the system clock
+        //    has advanced, only then redraw the clock.
+        gettimeofday(&now, NULL);
+        int timeout_nanos = 0;
+        if ((now.tv_sec == prev_paint_at_seconds) && (now.tv_usec > 0)) {
+            const suseconds_t microseconds_until_full_second = 1000 * 1000 - now.tv_usec;
+            timeout_nanos = 1000 * microseconds_until_full_second;
+        }
+        struct timespec timeout = {
+            .tv_sec = 0,
+            .tv_nsec = timeout_nanos
+        };
+
         const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
         // Refresh the clock on timeouts.
@@ -659,6 +677,7 @@ int main(int argc, char *argv[]) {
 
         // Refresh the screen if needed.
         if (redraw_needed) {
+            prev_paint_at_seconds = now.tv_sec;
             redraw_screen(errstr);
             redraw_needed = false;
         }
