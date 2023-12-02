@@ -610,7 +610,13 @@ int main(int argc, char *argv[]) {
             if (tty >= select_nfds)
                 select_nfds = tty + 1;
         }
-        struct timespec timeout = { .tv_sec = 0, .tv_nsec = 500e6 };  // 500 milliseconds for refreshing the clock
+        // Refresh the clock on the next full second.
+        const int nanoseconds_per_second = 1e9;
+        const int nanoseconds_remaining = nanoseconds_per_second - now.tv_usec * 1000;
+        struct timespec timeout = {
+            .tv_sec = nanoseconds_remaining / nanoseconds_per_second,
+            .tv_nsec = nanoseconds_remaining % nanoseconds_per_second
+        };
         const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
         gettimeofday(&now, NULL);
