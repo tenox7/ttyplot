@@ -613,8 +613,6 @@ int main(int argc, char *argv[]) {
         struct timespec timeout = { .tv_sec = 0, .tv_nsec = 500e6 };  // 500 milliseconds for refreshing the clock
         const int select_ret = pselect_without_signal_starvation(select_nfds, &read_fds, NULL, NULL, &timeout, &empty_sigset);
 
-        gettimeofday(&now, NULL);
-
         // Refresh the clock on timeouts.
         if (select_ret == 0)
             redraw_needed = true;
@@ -647,6 +645,8 @@ int main(int argc, char *argv[]) {
                 tty = -1;
             }
         }
+
+        gettimeofday(&now, NULL);  // for input handling and also drawing
 
         // Handle input data.
         if (select_ret > 0 && FD_ISSET(STDIN_FILENO, &read_fds)) {
