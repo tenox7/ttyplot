@@ -554,9 +554,6 @@ int main(int argc, char *argv[]) {
         cbreak();
     }
 
-    signal(SIGWINCH, signal_handler);
-    signal(SIGINT, signal_handler);
-
     int signal_fds[2];
     if (pipe(signal_fds) != 0) {
         perror("pipe");
@@ -564,6 +561,9 @@ int main(int argc, char *argv[]) {
     }
     signal_read_fd = signal_fds[0];
     signal_write_fd = signal_fds[1];
+
+    signal(SIGWINCH, signal_handler);
+    signal(SIGINT, signal_handler);
 
     while(1) {
         // Block until (a) we receive a signal or (b) stdin can be read without blocking
