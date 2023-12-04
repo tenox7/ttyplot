@@ -591,10 +591,10 @@ int main(int argc, char *argv[]) {
         };
         const int select_ret = select(select_nfds, &read_fds, NULL, NULL, &timeout);
 
+        // Refresh the clock if the seconds have changed.
+        const time_t displayed_time = now.tv_sec;
         gettimeofday(&now, NULL);
-
-        // Refresh the clock on timeouts.
-        if (select_ret == 0)
+        if (now.tv_sec != displayed_time)
             redraw_needed = true;
 
         // Handle signals.
