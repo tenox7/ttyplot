@@ -582,13 +582,29 @@ int main(int argc, char *argv[]) {
             if (tty >= select_nfds)
                 select_nfds = tty + 1;
         }
-        // Refresh the clock on the next full second.
+
+        // Refresh the clock on the next full second (plus a few milliseconds).
+        //
+        // We will sleep for a duration of up to a full second here knowing that:
+        // - we are technically putting two redraws apart by more than one second
+        // - that extra is only a few milliseconds (<25 in practice, often <1)
+        // - a few milliseconds is on the edge of what the human eye can notice
+        // - we can save CPU time (and potentially battery life) through giving
+        //   up on these milliseconds more in clock refresh delay accuracy.
+        //
+        // We had a constant timeout of 500 milliseconds before (which translates
+        // to twice the frequency of the maximum desired delay: redrawing at least
+        // once per second, the Nyquist frequency at work) but it ran the loop twice
+        // as much (including calling `select` twice as often) as the new approach.
+        // So we decided for lower CPU usage and a timeout of up to a full second.
+        //
         const int microseconds_per_second = 1e6;
         const int microseconds_remaining = microseconds_per_second - now.tv_usec;
         struct timeval timeout = {
             .tv_sec = microseconds_remaining / microseconds_per_second,
             .tv_usec = microseconds_remaining % microseconds_per_second
         };
+
         const int select_ret = select(select_nfds, &read_fds, NULL, NULL, &timeout);
 
         gettimeofday(&now, NULL);
