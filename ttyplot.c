@@ -430,6 +430,30 @@ static bool handle_input_event(void)
     return false;
 }
 
+// Refresh the clock on the next full second (plus a few milliseconds).
+//
+// We will sleep for a duration of up to a full second here knowing that:
+// - we are technically putting two redraws apart by more than one second
+// - that extra is only a few milliseconds (<25 in practice, often <1)
+// - a few milliseconds is on the edge of what the human eye can notice
+// - we can save CPU time (and potentially battery life) through giving
+//   up on these milliseconds more in clock refresh delay accuracy.
+//
+// We had a constant timeout of 500 milliseconds before (which translates
+// to twice the frequency of the maximum desired delay: redrawing at least
+// once per second, the Nyquist frequency at work) but it ran the loop twice
+// as much (including calling `select` twice as often) as the new approach.
+// So we decided for lower CPU usage and a timeout of up to a full second.
+//
+static struct timeval calculate_clock_refresh_timeout_from(suseconds_t now_tv_usec) {
+    const int microseconds_per_second = 1e6;
+    const int microseconds_remaining = microseconds_per_second - now_tv_usec;
+    return (struct timeval) {
+        .tv_sec = microseconds_remaining / microseconds_per_second,
+        .tv_usec = microseconds_remaining % microseconds_per_second
+    };
+}
+
 // Block until (a) we receive a signal or (b) stdin can be read without blocking
 // or (c) timeout expires, in order to reduce use of CPU and power while idle
 //
@@ -438,7 +462,7 @@ static bool handle_input_event(void)
 //   B) EVENT_UNKNOWN
 //   C) One or more of EVENT_*_READABLE or'ed together
 //
-static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open) {
+static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open, struct timeval * timeout) {
     fd_set read_fds;
     FD_ZERO(&read_fds);
     FD_SET(signal_read_fd, &read_fds);
@@ -454,29 +478,7 @@ static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open) {
             select_nfds = tty + 1;
     }
 
-    // Refresh the clock on the next full second (plus a few milliseconds).
-    //
-    // We will sleep for a duration of up to a full second here knowing that:
-    // - we are technically putting two redraws apart by more than one second
-    // - that extra is only a few milliseconds (<25 in practice, often <1)
-    // - a few milliseconds is on the edge of what the human eye can notice
-    // - we can save CPU time (and potentially battery life) through giving
-    //   up on these milliseconds more in clock refresh delay accuracy.
-    //
-    // We had a constant timeout of 500 milliseconds before (which translates
-    // to twice the frequency of the maximum desired delay: redrawing at least
-    // once per second, the Nyquist frequency at work) but it ran the loop twice
-    // as much (including calling `select` twice as often) as the new approach.
-    // So we decided for lower CPU usage and a timeout of up to a full second.
-    //
-    const int microseconds_per_second = 1e6;
-    const int microseconds_remaining = microseconds_per_second - now.tv_usec;
-    struct timeval timeout = {
-        .tv_sec = microseconds_remaining / microseconds_per_second,
-        .tv_usec = microseconds_remaining % microseconds_per_second
-    };
-
-    const int select_ret = select(select_nfds, &read_fds, NULL, NULL, &timeout);
+    const int select_ret = select(select_nfds, &read_fds, NULL, NULL, timeout);
 
     if (select_ret == 0) {
         return EVENT_TIMEOUT;
@@ -650,7 +652,9 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, signal_handler);
 
     while(1) {
-        const int events = wait_for_events(signal_read_fd, tty, stdin_is_open);
+        struct timeval timeout = calculate_clock_refresh_timeout_from(now.tv_usec);
+
+        const int events = wait_for_events(signal_read_fd, tty, stdin_is_open, &timeout);
 
         // Refresh the clock if the seconds have changed.
         const time_t displayed_time = now.tv_sec;
