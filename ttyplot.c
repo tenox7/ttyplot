@@ -112,8 +112,7 @@ static void version(void) {
 //  - v1, v2: addresses of input data and storage for results
 //  - now: current time
 // Return time since previous call.
-static double derivative(double *v1, double *v2, const struct timeval *now)
-{
+static double derivative(double *v1, double *v2, const struct timeval *now) {
     static double previous_v1, previous_v2, previous_t = DBL_MAX;
     const double t = now->tv_sec + 1e-6 * now->tv_usec;
     const double dt = t - previous_t;
@@ -312,8 +311,7 @@ static void redraw_screen(const char * errstr) {
 }
 
 // Return a pointer to the last occurrence within [s, s+n) of one of the bytes in the string accept.
-static char *find_last(char *s, size_t n, const char *accept)
-{
+static char *find_last(char *s, size_t n, const char *accept) {
     for (int pos = n - 1; pos >= 0; pos--) {
         if (strchr(accept, s[pos]))
             return s + pos;
@@ -323,8 +321,7 @@ static char *find_last(char *s, size_t n, const char *accept)
 
 // Handle a single value from the input stream.
 // Return whether we got a full data record.
-static bool handle_value(double value)
-{
+static bool handle_value(double value) {
     static double saved_value;
     static int saved_value_valid = 0;
 
@@ -351,8 +348,7 @@ static bool handle_value(double value)
 
 // Handle a chunk of input data: extract the numbers, store them, redraw if needed.
 // Return the number of bytes consumed.
-static size_t handle_input_data(char *buffer, size_t length)
-{
+static size_t handle_input_data(char *buffer, size_t length) {
     static const char delimiters[] = " \t\r\n";  // white space
 
     // Find the last delimiter.
@@ -384,8 +380,7 @@ static size_t handle_input_data(char *buffer, size_t length)
 
 // Handle an "input ready" event, where only a single read() is guaranteed to not block.
 // Return whether the input stream got closed.
-static bool handle_input_event(void)
-{
+static bool handle_input_event(void) {
     static char buffer[4096];
     static size_t buffer_pos = 0;
 
