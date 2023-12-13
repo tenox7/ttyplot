@@ -158,15 +158,6 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
     *avg=tot/i;
 }
 
-static void gethw(void) {
-    #ifdef NOGETMAXYX
-    height=LINES;
-    width=COLS;
-    #else
-    getmaxyx(stdscr, height, width);
-    #endif
-}
-
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     mvhline(h-3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
@@ -232,7 +223,7 @@ static void show_window_size_error(void) {
 
 static void paint_plot(void) {
     erase();
-    gethw();
+    getmaxyx(stdscr, height, width);
 
     plotheight=height-4;
     plotwidth=width-4;
@@ -626,7 +617,7 @@ int main(int argc, char *argv[]) {
     curs_set(FALSE);
     erase();
     refresh();
-    gethw();
+    getmaxyx(stdscr, height, width);
 
     redraw_screen(errstr);
 
@@ -674,7 +665,7 @@ int main(int argc, char *argv[]) {
                     initscr();
                     erase();
                     refresh();
-                    gethw();
+                    getmaxyx(stdscr, height, width);
                     redraw_needed = true;
                 }
             }
