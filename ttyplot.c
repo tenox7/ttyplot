@@ -49,7 +49,7 @@
 sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
-double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
+double softmax=0.0, hardmax=FLT_MAX, hardmin=0.0;
 char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
 double values1[NSAMP]={0}, values2[NSAMP]={0};
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
@@ -80,7 +80,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     int i=0;
 
     *min=FLT_MAX;
-    *max=FLT_MIN;
+    *max=0.0;
 
     for(i=0; i<pw && i<v && i<NSAMP; i++) {
        if(values[i]>*max)
@@ -159,9 +159,9 @@ void show_window_size_error(void) {
 }
 
 void paint_plot(void) {
-    double max=FLT_MIN;
-    double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
-    double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
+    double max=0.0;
+    double min1=FLT_MAX, max1=0.0, avg1=0;
+    double min2=FLT_MAX, max2=0.0, avg2=0;
     struct tm *lt;
 
     erase();
