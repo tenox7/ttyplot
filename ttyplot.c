@@ -44,12 +44,14 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
+#define NSAMP 1024
+
 sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
 double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
 char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
-double values1[1024]={0}, values2[1024]={0};
+double values1[NSAMP]={0}, values2[NSAMP]={0};
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
@@ -80,7 +82,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     *min=FLT_MAX;
     *max=FLT_MIN;
 
-    for(i=0; i<pw && i<v; i++) {
+    for(i=0; i<pw && i<v && i<NSAMP; i++) {
        if(values[i]>*max)
             *max=values[i];
 
@@ -148,12 +150,12 @@ void show_all_centered(const char * message) {
     mvaddnstr(y, x, message, width);
 }
 
-int window_big_enough_to_draw(void) {
-    return (width >= 68) && (height >= 5);
+int window_size_suitable(void) {
+    return (width >= 68) && (height >= 5) && (width < NSAMP);
 }
 
 void show_window_size_error(void) {
-    show_all_centered("Window too small...");
+    show_all_centered("Window too small or too big...");
 }
 
 void paint_plot(void) {
@@ -165,7 +167,7 @@ void paint_plot(void) {
     erase();
     gethw();
 
-    if(!window_big_enough_to_draw()) {
+    if(!window_size_suitable()) {
         show_window_size_error();
         sigprocmask(SIG_BLOCK, &sigmsk, NULL);
         refresh();
@@ -323,7 +325,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'M':
                 hardmin=atof(optarg);
-                for(i=0;i<1024;i++){
+                for(i=0;i<NSAMP;i++){
                     values1[i]=hardmin;
                     values2[i]=hardmin;
                 }
@@ -357,7 +359,7 @@ int main(int argc, char *argv[]) {
     erase();
     refresh();
     gethw();
-    if (window_big_enough_to_draw()) {
+    if (window_size_suitable()) {
         show_all_centered("waiting for data from stdin");
     } else {
         show_window_size_error();
@@ -388,7 +390,7 @@ int main(int argc, char *argv[]) {
                 errstr = "input stream closed";
             else
                 errstr = strerror(errno);
-            if (window_big_enough_to_draw()) {
+            if (window_size_suitable()) {
                 show_all_centered(errstr);
             } else {
                 show_window_size_error();
