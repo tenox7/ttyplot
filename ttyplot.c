@@ -47,15 +47,9 @@
 sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
-struct tm *lt;
-double max=FLT_MIN;
 double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
 char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
 double values1[1024]={0}, values2[1024]={0};
-double cval1=FLT_MAX, pval1=FLT_MAX;
-double cval2=FLT_MAX, pval2=FLT_MAX;
-double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
-double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
@@ -80,12 +74,11 @@ void version(void) {
 }
 
 void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
-    double tot=0;
+    double tot=0.0;
     int i=0;
 
     *min=FLT_MAX;
     *max=FLT_MIN;
-    tot=FLT_MIN;
 
     for(i=0; i<pw && i<v; i++) {
        if(values[i]>*max)
@@ -164,6 +157,11 @@ void show_window_size_error(void) {
 }
 
 void paint_plot(void) {
+    double max=FLT_MIN;
+    double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
+    double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
+    struct tm *lt;
+
     erase();
     gethw();
 
@@ -250,6 +248,9 @@ int main(int argc, char *argv[]) {
     const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
     int show_ver;
     int show_usage;
+
+    double cval1=FLT_MAX, pval1=FLT_MAX;
+    double cval2=FLT_MAX, pval2=FLT_MAX;
 
     plotchar=T_VLINE;
     max_errchar='e';
