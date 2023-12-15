@@ -14,6 +14,7 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <errno.h>
+#include <math.h>
 
 #ifdef __OpenBSD__
 #include <err.h>
@@ -49,9 +50,9 @@
 sigset_t sigmsk;
 chtype plotchar, max_errchar, min_errchar;
 time_t t1,t2,td;
-double softmax=0.0, hardmax=FLT_MAX, hardmin=0.0;
+double softmax=0.0, hardmax=FLT_MAX, softmin=0.0, hardmin=-FLT_MAX;
 char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
-double values1[NSAMP]={0}, values2[NSAMP]={0};
+double values1[NSAMP], values2[NSAMP];
 int width=0, height=0, n=0, r=0, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
 const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
@@ -80,7 +81,7 @@ void getminmax(int pw, double *values, double *min, double *max, double *avg, in
     int i=0;
 
     *min=FLT_MAX;
-    *max=0.0;
+    *max=-FLT_MAX;
 
     for(i=0; i<pw && i<v && i<NSAMP; i++) {
        if(values[i]>*max)
@@ -128,19 +129,38 @@ void draw_line(int x, int ph, int l1, int l2, chtype c1, chtype c2, chtype hce, 
     }
 }
 
-void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, chtype pc, chtype hce, chtype lce, double hm) {
+void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, chtype pc, chtype hce, chtype lce, double hardmax, double hardmin) {
     const int first_col=3;
     int i=(n+1)%pw;
     int x;
-    max-=min;
+    int l1, l2;
 
-    for(x=first_col; x<first_col+pw; x++, i=(i+1)%pw)
-        draw_line(x, ph,
-                  (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
-                  (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
-                  (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
-                  (v2[i]>hm) ? hce : (v2[i]<min) ? lce : pc,
-                  hce, lce);
+    for(x=first_col; x<first_col+pw; x++, i=(i+1)%pw) {
+        /* suppress drawing uninitalized entries */
+        if(!v1 || isnan(v1[i]))
+            continue;
+
+        if(v1[i] > hardmax)
+            l1 = ph;
+        else if(v1[i] < hardmin)
+            l1 = 0;
+        else
+            l1 = lrint((v1[i]-min)/(max-min)*ph);
+
+        if(!v2 || isnan(v2[i]))
+            l2 = 0;
+        else if(v2[i]>hardmax)
+            l2 = ph;
+        else if(v2[i] < hardmin)
+            l2  = 0;
+        else
+            l2 = lrint((v2[i]-min)/(max-min)*ph);
+
+        draw_line(x, ph, l1, l2,
+                (v1[i]>hardmax) ? hce : (v1[i]<hardmin) ? lce : pc,
+                (v2 && v2[i]>hardmax) ? hce : (v2 && v2[i]<hardmin) ? lce : pc,
+                hce, lce);
+    }
 }
 
 void show_all_centered(const char * message) {
@@ -159,9 +179,9 @@ void show_window_size_error(void) {
 }
 
 void paint_plot(void) {
-    double max=0.0;
-    double min1=FLT_MAX, max1=0.0, avg1=0;
-    double min2=FLT_MAX, max2=0.0, avg2=0;
+    double min, max;
+    double min1=FLT_MAX, max1=-FLT_MAX, avg1=0;
+    double min2=FLT_MAX, max2=-FLT_MAX, avg2=0;
     struct tm *lt;
 
     erase();
@@ -183,15 +203,17 @@ void paint_plot(void) {
     getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
     getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
 
-    if(max1>max2)
-        max=max1;
-    else
-        max=max2;
-
+    max = max1>max2 ? max1 : max2;
     if(max<softmax)
         max=softmax;
     if(hardmax!=FLT_MAX)
         max=hardmax;
+
+    min = min1<min2 ? min1 : min2;
+    if(min>softmin)
+        min=softmin;
+    if(hardmin!=-FLT_MAX)
+        min=hardmin;
 
     mvaddstr(height-1, width-strlen(verstring)-1, verstring);
 
@@ -209,9 +231,13 @@ void paint_plot(void) {
         mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
     }
 
-    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, plotchar, max_errchar, min_errchar, hardmax);
+    plot_values(plotheight, plotwidth,
+                values1, two ? values2 : NULL,
+                max, min, n,
+                plotchar, max_errchar, min_errchar,
+                hardmax, hardmin);
 
-    draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
+    draw_axes(height, plotheight, plotwidth, max, min, unit);
 
     mvaddstr(0, (width/2)-(strlen(title)/2), title);
 
@@ -247,12 +273,17 @@ int main(int argc, char *argv[]) {
     int i;
     char *errstr;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
+    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vh";
     int show_ver;
     int show_usage;
 
     double cval1=FLT_MAX, pval1=FLT_MAX;
     double cval2=FLT_MAX, pval2=FLT_MAX;
+
+    for(i=0; i<NSAMP; i++) {
+        values1[i] = NAN;
+        values2[i] = NAN;
+    }
 
     plotchar=T_VLINE;
     max_errchar='e';
@@ -319,6 +350,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 's':
                 softmax=atof(optarg);
+                break;
+            case 'S':
+                softmin=atof(optarg);
                 break;
             case 'm':
                 hardmax=atof(optarg);
@@ -400,11 +434,6 @@ int main(int argc, char *argv[]) {
             sigprocmask(SIG_UNBLOCK, &sigmsk, NULL);
             pause();
         }
-
-        if(values1[n] < 0)
-            values1[n] = 0;
-        if(values2[n] < 0)
-            values2[n] = 0;
 
         if(rate) {
             t2=t1;
