@@ -20,7 +20,7 @@ const char help[] =
     "  -h       print this help message and exit\n"
     "  -2       output two waves\n"
     "  -c       randomly chunk the output\n"
-    "  -g       occasionally replace values by garbage\n"
+    "  -g       occasionally output garbage\n"
     "  -r rate  sample rate in samples/s (default: 100)\n"
     "  -s seed  set random seed\n";
 
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     int opt;
     bool two_waves = false;
     bool chunked = false;
-    bool corrupt_some = false;
+    bool add_garbage = false;
     double rate = 100;
     unsigned int seed = time(NULL);
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
                 chunked = true;
                 break;
             case 'g':
-                corrupt_some = true;
+                add_garbage = true;
                 break;
             case 'r':
                 rate = atof(optarg);
@@ -71,18 +71,14 @@ int main(int argc, char *argv[]) {
     srand(seed);
 
     for (unsigned int n=0; ; n+=5) {
-        if (corrupt_some && rand() <= RAND_MAX / 5)
+        buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
+        if (add_garbage && rand() <= RAND_MAX / 5)
             buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
-        else
-            buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
-
         if (two_waves) {
-            if (corrupt_some && rand() <= RAND_MAX / 5)
+            buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (cos(n*M_PI/180)*5)+5);
+            if (add_garbage && rand() <= RAND_MAX / 5)
                 buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
-            else
-                buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (cos(n*M_PI/180)*5)+5);
         }
-
         if (chunked) {
             size_t send_pos = 0;
             while (buffer_pos - send_pos >= 16) {
