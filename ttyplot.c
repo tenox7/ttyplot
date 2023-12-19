@@ -353,15 +353,16 @@ static size_t handle_input_data(char *buffer, size_t length) {
     char *str = buffer;
     char *token;
     while ((token = strtok(str, delimiters)) != NULL) {
+        str = NULL;  // tell strtok() to stay on the same string next time
+
         char *number_end;
         double value = strtod(token, &number_end);
         if (*number_end != '\0')  // garbage found
-            value = 0;
+            continue;
         if (! isfinite(value))
-            value = 0;
+            continue;
         if (handle_value(value))
             records++;
-        str = NULL;  // tell strtok() to stay on the same string
     }
     v += records;
     if (records > 0)
