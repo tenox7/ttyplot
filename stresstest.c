@@ -70,12 +70,14 @@ int main(int argc, char *argv[]) {
     const useconds_t delay = 1e6 / rate;
     srand(seed);
 
-    for (unsigned int n=0; ; n+=5) {
-        buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
+    for (unsigned int n = 0;; n += 5) {
+        buffer_pos +=
+            sprintf(buffer + buffer_pos, "%.1f\n", (sin(n * M_PI / 180) * 5) + 5);
         if (add_garbage && rand() <= RAND_MAX / 5)
             buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         if (two_waves) {
-            buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (cos(n*M_PI/180)*5)+5);
+            buffer_pos +=
+                sprintf(buffer + buffer_pos, "%.1f\n", (cos(n * M_PI / 180) * 5) + 5);
             if (add_garbage && rand() <= RAND_MAX / 5)
                 buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         }
