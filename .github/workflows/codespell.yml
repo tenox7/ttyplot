@@ -1,0 +1,28 @@
+# Copyright (c) 2023 Sebastian Pipping <sebastian@pipping.org>
+# Licensed under Apache License Version 2.0
+
+name: Enforce codespell-clean spelling
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: '0 3 * * 5'  # Every Friday at 3am
+  workflow_dispatch:
+
+# Minimum permissions for security
+permissions:
+  contents: read
+
+jobs:
+  codespell:
+    name: Enforce codespell-clean spelling
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
+
+      - uses: codespell-project/actions-codespell@94259cd8be02ad2903ba34a22d9c13de21a74461  # v2.0
+        with:
+          # "nd" (with lowercase "n") is from ".Nd" (with uppercase "n") in ttyplot.1
+          # https://github.com/codespell-project/codespell/issues/3233#issuecomment-1828026522
+          ignore_words_list: nd

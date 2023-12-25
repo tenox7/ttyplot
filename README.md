@@ -203,7 +203,9 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 ## flags
 
 ```
-  ttyplot [-h] [-v] [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
+  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
+  ttyplot -h
+  ttyplot -v
 
   -2 read two values and draw two plots, the second one is in reverse video
   -r rate of a counter (divide value by measured sample interval)
@@ -222,6 +224,21 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 &nbsp;
 &nbsp;
 
+
+## key bindings
+
+
+when reading data from a pipe, ttyplot accepts the following commands typed at the terminal:
+
+```
+  q  quit
+  r  toggle rate mode
+```
+
+these commands do not work if the standard input is a terminal: in this case quit with <kbd>Ctrl</kbd>-<kbd>C</kbd>.
+
+&nbsp;
+&nbsp;
 
 
 ## frequently questioned answers
@@ -263,4 +280,6 @@ by default in unix stdio is buffered, you can work around it in [various ways](h
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
 Copyright (c) 2019-2023 Google LLC
+Copyright (c) 2023 Edgar Bonet
+Copyright (c) 2023 Sebastian Pipping
 ```

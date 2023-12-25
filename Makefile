@@ -2,10 +2,10 @@ DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
 CFLAGS += -Wall -Wextra
-LDLIBS += `pkg-config --libs ncurses`
-torture: LDLIBS = -lm
+CFLAGS += `pkg-config --cflags ncursesw`
+LDLIBS += `pkg-config --libs ncursesw` -lm
 
-all: ttyplot
+all: ttyplot stresstest
 
 install: ttyplot ttyplot.1
 	install -d $(DESTDIR)$(PREFIX)/bin
@@ -18,13 +18,10 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/ttyplot.1
 
 clean:
-	rm -f ttyplot torture *.o
+	rm -f ttyplot stresstest
 
-require_pkgconfig:
-	which pkg-config
+.c:
+	@pkg-config --version > /dev/null
+	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
-ttyplot.o: require_pkgconfig
-
-torture.o: require_pkgconfig
-
-.PHONY: all clean install uninstall require_pkgconfig
+.PHONY: all clean install uninstall

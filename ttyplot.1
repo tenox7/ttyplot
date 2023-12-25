@@ -1,4 +1,4 @@
-.Dd May 7, 2019
+.Dd November 27, 2023
 .Dt TTYPLOT 1
 .Os
 .Sh NAME
@@ -7,6 +7,10 @@
 .Sh SYNOPSIS
 .Nm
 .Op Ar options
+.Nm
+-v
+.Nm
+-h
 .Sh DESCRIPTION
 .Nm
 takes data from standard input,
@@ -74,7 +78,20 @@ as the plot title.
 .It Fl u Ar unit
 Label the vertical axis
 .Ar unit .
+.It Fl v
+Print the current version and exit.
+.It Fl h
+Print this help message and exit.
 .El
+.Sh KEY BINDINGS
+When reading data from a pipe,
+.Nm
+accepts the following commands typed at the terminal:
+.Bl -tag -width Ds
+.It Ic q
+Quit.
+.It Ic r
+Toggle "rate mode" on and off.
 .Sh EXAMPLES
 CPU usage from
 .Xr vmstat 8
@@ -283,8 +300,12 @@ Prometheus node exporter disk throughput for
 .Ed
 .Sh AUTHORS
 .Nm
-as written by
-.An Antoni Sawicki Aq Mt tenox@google.com .
+is written by:
+.br
+.An Antoni Sawicki Aq Mt tenox@google.com ,
+.An Edgar Bonet Aq Mt linux@edgar-bonet.org
+and
+.An Sebastian Pipping Aq Mt sebastian@pipping.org .
 .Pp
 Its readme was converted into this manual page by
 .An Sijmen J. Mulder Aq Mt ik@sjmulder.nl .
