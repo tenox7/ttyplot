@@ -83,16 +83,20 @@ int main(int argc, char *argv[]) {
             size_t send_pos = 0;
             while (buffer_pos - send_pos >= 16) {
                 const size_t bytes_to_send = 1 + rand() % 16;  // 1..16
-                write(STDOUT_FILENO, buffer + send_pos, bytes_to_send);
+                const ssize_t bytes_sent = write(STDOUT_FILENO, buffer + send_pos, bytes_to_send);
                 usleep(50);  // let ttyplot read this before proceeding
-                send_pos += bytes_to_send;
+                if (bytes_sent > 0)
+                    send_pos += bytes_sent;
             }
             if (send_pos > 0 && send_pos < buffer_pos)
                 memmove(buffer, buffer + send_pos, buffer_pos - send_pos);
             buffer_pos -= send_pos;
         } else {
-            write(STDOUT_FILENO, buffer, buffer_pos);
-            buffer_pos = 0;
+            const ssize_t bytes_sent = write(STDOUT_FILENO, buffer, buffer_pos);
+            if ((bytes_sent > 0) && ((size_t)bytes_sent < buffer_pos))
+                memmove(buffer, buffer + bytes_sent, buffer_pos - bytes_sent);
+            if (bytes_sent > 0)
+                buffer_pos -= bytes_sent;
         }
         usleep(delay);
     }

@@ -282,7 +282,10 @@ static void paint_plot(void) {
 // (Related: https://stackoverflow.com/q/62315082)
 static void signal_handler(int signum) {
     const unsigned char signal_number = (unsigned char) signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
-    write(signal_write_fd, &signal_number, 1);
+    ssize_t write_res;
+    do {
+        write_res = write(signal_write_fd, &signal_number, 1);
+    } while ((write_res == -1) && (errno == EINTR));
 }
 
 static void redraw_screen(const char * errstr) {
