@@ -481,7 +481,7 @@ static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open, stru
             ret |= EVENT_SIGNAL_READABLE;
         }
 
-        if (FD_ISSET(tty, &read_fds)) {
+        if ((tty != -1) && FD_ISSET(tty, &read_fds)) {
             ret |= EVENT_TTY_READABLE;
         }
 
