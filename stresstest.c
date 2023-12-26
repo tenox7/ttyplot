@@ -70,12 +70,14 @@ int main(int argc, char *argv[]) {
     const useconds_t delay = 1e6 / rate;
     srand(seed);
 
-    for (unsigned int n=0; ; n+=5) {
-        buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (sin(n*M_PI/180)*5)+5);
+    for (unsigned int n = 0;; n += 5) {
+        buffer_pos +=
+            sprintf(buffer + buffer_pos, "%.1f\n", (sin(n * M_PI / 180) * 5) + 5);
         if (add_garbage && rand() <= RAND_MAX / 5)
             buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         if (two_waves) {
-            buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n", (cos(n*M_PI/180)*5)+5);
+            buffer_pos +=
+                sprintf(buffer + buffer_pos, "%.1f\n", (cos(n * M_PI / 180) * 5) + 5);
             if (add_garbage && rand() <= RAND_MAX / 5)
                 buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         }
@@ -83,7 +85,8 @@ int main(int argc, char *argv[]) {
             size_t send_pos = 0;
             while (buffer_pos - send_pos >= 16) {
                 const size_t bytes_to_send = 1 + rand() % 16;  // 1..16
-                const ssize_t bytes_sent = write(STDOUT_FILENO, buffer + send_pos, bytes_to_send);
+                const ssize_t bytes_sent =
+                    write(STDOUT_FILENO, buffer + send_pos, bytes_to_send);
                 usleep(50);  // let ttyplot read this before proceeding
                 if (bytes_sent > 0)
                     send_pos += bytes_sent;

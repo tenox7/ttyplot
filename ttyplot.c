@@ -7,7 +7,8 @@
 // Apache License 2.0
 //
 
-// This is needed on macOS to get the ncurses widechar API, and pkg-config fails to define it.
+// This is needed on macOS to get the ncurses widechar API, and pkg-config fails to
+// define it.
 #ifdef __APPLE__
 #define _XOPEN_SOURCE_EXTENDED
 #endif
@@ -68,40 +69,46 @@ static cchar_t plotchar, max_errchar, min_errchar;
 static struct timeval now;
 static double td;
 static struct tm *lt;
-static double max=FLT_MIN;
-static double softmax=FLT_MIN, hardmax=FLT_MAX, hardmin=0.0;
-static char title[256]=".: ttyplot :.", unit[64]={0}, ls[256]={0};
-static double values1[1024]={0}, values2[1024]={0};
-static double min1=FLT_MAX, max1=FLT_MIN, avg1=0;
-static double min2=FLT_MAX, max2=FLT_MIN, avg2=0;
-static int width=0, height=0, n=-1, v=0, c=0, rate=0, two=0, plotwidth=0, plotheight=0;
+static double max = FLT_MIN;
+static double softmax = FLT_MIN, hardmax = FLT_MAX, hardmin = 0.0;
+static char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
+static double values1[1024] = {0}, values2[1024] = {0};
+static double min1 = FLT_MAX, max1 = FLT_MIN, avg1 = 0;
+static double min2 = FLT_MAX, max2 = FLT_MIN, avg2 = 0;
+static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
+           plotwidth = 0, plotheight = 0;
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
-    printf("Usage:\n"
-            "  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]\n"
-            "  ttyplot -h\n"
-            "  ttyplot -v\n"
-            "\n"
-            "  -2 read two values and draw two plots, the second one is in reverse video\n"
-            "  -r rate of a counter (divide value by measured sample interval)\n"
-            "  -c character to use for plot line, eg @ # %% . etc\n"
-            "  -e character to use for error line when value exceeds hardmax (default: e)\n"
-            "  -E character to use for error symbol displayed when value is less than hardmin (default: v)\n"
-            "  -s initial scale of the plot (can go above if data input has larger value)\n"
-            "  -m maximum value, if exceeded draws error line (see -e), upper-limit of plot scale is fixed\n"
-            "  -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed\n"
-            "  -t title of the plot\n"
-            "  -u unit displayed beside vertical bar\n"
-            "  -v print the current version and exit\n"
-            "  -h print this help message and exit\n"
-            "\n"
-            "Hotkeys:\n"
-            "   q quit\n"
-            "   r toggle rate mode\n");
+    printf(
+        "Usage:\n"
+        "  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u "
+        "unit]\n"
+        "  ttyplot -h\n"
+        "  ttyplot -v\n"
+        "\n"
+        "  -2 read two values and draw two plots, the second one is in reverse video\n"
+        "  -r rate of a counter (divide value by measured sample interval)\n"
+        "  -c character to use for plot line, eg @ # %% . etc\n"
+        "  -e character to use for error line when value exceeds hardmax (default: e)\n"
+        "  -E character to use for error symbol displayed when value is less than "
+        "hardmin (default: v)\n"
+        "  -s initial scale of the plot (can go above if data input has larger value)\n"
+        "  -m maximum value, if exceeded draws error line (see -e), upper-limit of "
+        "plot scale is fixed\n"
+        "  -M minimum value, if entered less than this, draws error symbol (see -E), "
+        "lower-limit of the plot scale is fixed\n"
+        "  -t title of the plot\n"
+        "  -u unit displayed beside vertical bar\n"
+        "  -v print the current version and exit\n"
+        "  -h print this help message and exit\n"
+        "\n"
+        "Hotkeys:\n"
+        "   q quit\n"
+        "   r toggle rate mode\n");
 }
 
 static void version(void) {
@@ -136,79 +143,87 @@ static double derivative(double *v1, double *v2, const struct timeval *now) {
     return dt;
 }
 
-static void getminmax(int pw, double *values, double *min, double *max, double *avg, int v) {
-    double tot=0;
-    int i=0;
+static void getminmax(int pw, double *values, double *min, double *max, double *avg,
+                      int v) {
+    double tot = 0;
+    int i = 0;
 
-    *min=FLT_MAX;
-    *max=FLT_MIN;
-    tot=FLT_MIN;
+    *min = FLT_MAX;
+    *max = FLT_MIN;
+    tot = FLT_MIN;
 
-    for(i=0; i<pw && i<v; i++) {
-       if(values[i]>*max)
-            *max=values[i];
+    for (i = 0; i < pw && i < v; i++) {
+        if (values[i] > *max)
+            *max = values[i];
 
-        if(values[i]<*min)
-            *min=values[i];
+        if (values[i] < *min)
+            *min = values[i];
 
-        tot=tot+values[i];
+        tot = tot + values[i];
     }
 
-    *avg=tot/i;
+    *avg = tot / i;
 }
 
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
-    mvhline(h-3, 2, T_HLINE, pw);
+    mvhline(h - 3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
     if (max - min >= 0.1) {
         mvprintw(1, 4, "%.1f %s", max, unit);
-        mvprintw((ph/4)+1, 4, "%.1f %s", min/4 + max*3/4, unit);
-        mvprintw((ph/2)+1, 4, "%.1f %s", min/2 + max/2, unit);
-        mvprintw((ph*3/4)+1, 4, "%.1f %s", min*3/4 + max/4, unit);
+        mvprintw((ph / 4) + 1, 4, "%.1f %s", min / 4 + max * 3 / 4, unit);
+        mvprintw((ph / 2) + 1, 4, "%.1f %s", min / 2 + max / 2, unit);
+        mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", min * 3 / 4 + max / 4, unit);
     }
-    mvaddch(h-3, 2+pw, T_RARR);
+    mvaddch(h - 3, 2 + pw, T_RARR);
     mvaddch(1, 2, T_UARR);
-    mvaddch(h-3, 2, T_LLCR);
+    mvaddch(h - 3, 2, T_LLCR);
 }
 
-static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2, cchar_t *hce, cchar_t *lce) {
-    static cchar_t space = {
-        .attr = A_REVERSE,
-        .chars = {' ', '\0'}
-    };
+static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
+                      cchar_t *hce, cchar_t *lce) {
+    static cchar_t space = {.attr = A_REVERSE, .chars = {' ', '\0'}};
     cchar_t c1r = *c1, c2r = *c2;
     c1r.attr |= A_REVERSE;
     c2r.attr |= A_REVERSE;
-    if(l1 > l2) {
-        mvvline_set(ph+1-l1, x, c1, l1-l2 );
-        mvvline_set(ph+1-l2, x, &c2r, l2 );
-    } else if(l1 < l2) {
-        mvvline_set(ph+1-l2, x, (c2==hce || c2==lce) ? &c2r : &space,  l2-l1 );
-        mvvline_set(ph+1-l1, x, &c2r, l1 );
+    if (l1 > l2) {
+        mvvline_set(ph + 1 - l1, x, c1, l1 - l2);
+        mvvline_set(ph + 1 - l2, x, &c2r, l2);
+    } else if (l1 < l2) {
+        mvvline_set(ph + 1 - l2, x, (c2 == hce || c2 == lce) ? &c2r : &space, l2 - l1);
+        mvvline_set(ph + 1 - l1, x, &c2r, l1);
     } else {
-        mvvline_set(ph+1-l2, x, &c2r, l2 );
+        mvvline_set(ph + 1 - l2, x, &c2r, l2);
     }
 }
 
-static void plot_values(int ph, int pw, double *v1, double *v2, double max, double min, int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
-    const int first_col=3;
-    int i=(n+1)%pw;
+static void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
+                        int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
+    const int first_col = 3;
+    int i = (n + 1) % pw;
     int x;
-    max-=min;
+    max -= min;
 
-    for(x=first_col; x<first_col+pw; x++, i=(i+1)%pw)
+    for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw)
         draw_line(x, ph,
-                  (v1[i]>hm) ? ph  : (v1[i]<min) ?  1  : (int)(((v1[i]-min)/max)*(double)ph),
-                  (v2[i]>hm) ? ph  : (v2[i]<min) ?  1  : (int)(((v2[i]-min)/max)*(double)ph),
-                  (v1[i]>hm) ? hce : (v1[i]<min) ? lce : pc,
-                  (v2[i]>hm) ? hce : (v2[i]<min) ? lce : pc,
+                  (v1[i] > hm)    ? ph
+                  : (v1[i] < min) ? 1
+                                  : (int)(((v1[i] - min) / max) * (double)ph),
+                  (v2[i] > hm)    ? ph
+                  : (v2[i] < min) ? 1
+                                  : (int)(((v2[i] - min) / max) * (double)ph),
+                  (v1[i] > hm)    ? hce
+                  : (v1[i] < min) ? lce
+                                  : pc,
+                  (v2[i] > hm)    ? hce
+                  : (v2[i] < min) ? lce
+                                  : pc,
                   hce, lce);
 }
 
-static void show_all_centered(const char * message) {
+static void show_all_centered(const char *message) {
     const size_t message_len = strlen(message);
-    const int x = ((int)message_len > width) ? 0 : (width/2 - (int)message_len/2);
-    const int y = height/2;
+    const int x = ((int)message_len > width) ? 0 : (width / 2 - (int)message_len / 2);
+    const int y = height / 2;
     mvaddnstr(y, x, message, width);
 }
 
@@ -224,27 +239,27 @@ static void paint_plot(void) {
     erase();
     getmaxyx(stdscr, height, width);
 
-    plotheight=height-4;
-    plotwidth=width-4;
-    if(plotwidth>=(int)((sizeof(values1)/sizeof(double))-1))
+    plotheight = height - 4;
+    plotwidth = width - 4;
+    if (plotwidth >= (int)((sizeof(values1) / sizeof(double)) - 1))
         exit(0);
 
     getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
     getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
 
-    if(max1>max2)
-        max=max1;
+    if (max1 > max2)
+        max = max1;
     else
-        max=max2;
+        max = max2;
 
-    if(max<softmax)
-        max=softmax;
-    if(hardmax!=FLT_MAX)
-        max=hardmax;
+    if (max < softmax)
+        max = softmax;
+    if (hardmax != FLT_MAX)
+        max = hardmax;
 
-    mvaddstr(height-1, width-strlen(verstring)-1, verstring);
+    mvaddstr(height - 1, width - strlen(verstring) - 1, verstring);
 
-    const char * clock_display;
+    const char *clock_display;
     if (fake_clock) {
         clock_display = "Thu Jan  1 00:00:00 1970 ";
     } else {
@@ -252,43 +267,46 @@ static void paint_plot(void) {
         asctime_r(lt, ls);
         clock_display = ls;
     }
-    mvaddstr(height-2, width-strlen(clock_display), clock_display);
+    mvaddstr(height - 2, width - strlen(clock_display), clock_display);
 
-    mvvline_set(height-2, 5, &plotchar, 1);
+    mvvline_set(height - 2, 5, &plotchar, 1);
     if (v > 0) {
-        mvprintw(height-2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ",  values1[n], min1, max1, avg1, unit);
-        if(rate)
+        mvprintw(height - 2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ", values1[n],
+                 min1, max1, avg1, unit);
+        if (rate)
             printw(" interval=%.3gs", td);
-
     }
     if (two) {
-        mvaddch(height-1, 5, ' '|A_REVERSE);
+        mvaddch(height - 1, 5, ' ' | A_REVERSE);
         if (v > 0) {
-            mvprintw(height-1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",  values2[n], min2, max2, avg2, unit);
+            mvprintw(height - 1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",
+                     values2[n], min2, max2, avg2, unit);
         }
     }
 
-    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, &plotchar, &max_errchar, &min_errchar, hardmax);
+    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, &plotchar,
+                &max_errchar, &min_errchar, hardmax);
 
     draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
 
-    mvaddstr(0, (width/2)-(strlen(title)/2), title);
+    mvaddstr(0, (width / 2) - (strlen(title) / 2), title);
 
-    move(0,0);
+    move(0, 0);
 }
 
 // Send signals through a pipe, in order to catch them without race conditions.
 // pselect() could be an alternative, but it is unreliable on Linux.
 // (Related: https://stackoverflow.com/q/62315082)
 static void signal_handler(int signum) {
-    const unsigned char signal_number = (unsigned char) signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
+    const unsigned char signal_number =
+        (unsigned char)signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
     ssize_t write_res;
     do {
         write_res = write(signal_write_fd, &signal_number, 1);
     } while ((write_res == -1) && (errno == EINTR));
 }
 
-static void redraw_screen(const char * errstr) {
+static void redraw_screen(const char *errstr) {
     if (window_big_enough_to_draw()) {
         paint_plot();
 
@@ -304,7 +322,8 @@ static void redraw_screen(const char * errstr) {
     refresh();
 }
 
-// Return a pointer to the last occurrence within [s, s+n) of one of the bytes in the string accept.
+// Return a pointer to the last occurrence within [s, s+n) of one of the bytes in the
+// string accept.
 static char *find_last(char *s, size_t n, const char *accept) {
     for (int pos = n - 1; pos >= 0; pos--) {
         if (strchr(accept, s[pos]))
@@ -320,14 +339,14 @@ static bool handle_value(double value) {
     static int saved_value_valid = 0;
 
     // First value of a 2-value record: save it for later.
-    if (two && !saved_value_valid) {
+    if (two && ! saved_value_valid) {
         saved_value = value;
         saved_value_valid = 1;
         return false;
     }
 
     // Otherwise we have a full record.
-    n = (n+1) % plotwidth;
+    n = (n + 1) % plotwidth;
     if (two) {
         values1[n] = saved_value;
         values2[n] = value;
@@ -347,7 +366,7 @@ static size_t handle_input_data(char *buffer, size_t length) {
 
     // Find the last delimiter.
     char *end = find_last(buffer, length, delimiters);
-    if (!end)
+    if (! end)
         return 0;
     *end = '\0';
 
@@ -380,12 +399,13 @@ static bool handle_input_event(void) {
     static size_t buffer_pos = 0;
 
     // Buffer incoming data.
-    ssize_t bytes_read = read(STDIN_FILENO, buffer + buffer_pos, sizeof(buffer) - 1 - buffer_pos);
-    if (bytes_read < 0) {  // read error
+    ssize_t bytes_read =
+        read(STDIN_FILENO, buffer + buffer_pos, sizeof(buffer) - 1 - buffer_pos);
+    if (bytes_read < 0) {                       // read error
         if (errno == EINTR || errno == EAGAIN)  // we should try again later
             return false;
         errstr = strerror(errno);  // other errors are considered fatal
-        redraw_needed = true;  // redraw to display the error message
+        redraw_needed = true;      // redraw to display the error message
         return true;
     }
     if (bytes_read == 0) {
@@ -409,8 +429,9 @@ static bool handle_input_event(void) {
     // Handle this new data.
     size_t bytes_consumed = handle_input_data(buffer, buffer_pos);
 
-    // If we have excessive garbage, discard a bunch. This is to ensure that we can always ask read for >= 1K bytes,
-    // and keep good performance, especially with high input pressure.
+    // If we have excessive garbage, discard a bunch. This is to ensure that we can
+    // always ask read for >= 1K bytes, and keep good performance, especially with high
+    // input pressure.
     if (buffer_pos - bytes_consumed > sizeof(buffer) / 2)
         bytes_consumed += sizeof(buffer) / 4;
 
@@ -438,10 +459,9 @@ static bool handle_input_event(void) {
 static struct timeval calculate_clock_refresh_timeout_from(suseconds_t now_tv_usec) {
     const int microseconds_per_second = 1e6;
     const int microseconds_remaining = microseconds_per_second - now_tv_usec;
-    return (struct timeval) {
+    return (struct timeval){
         .tv_sec = microseconds_remaining / microseconds_per_second,
-        .tv_usec = microseconds_remaining % microseconds_per_second
-    };
+        .tv_usec = microseconds_remaining % microseconds_per_second};
 }
 
 // Block until (a) we receive a signal or (b) stdin can be read without blocking
@@ -452,7 +472,8 @@ static struct timeval calculate_clock_refresh_timeout_from(suseconds_t now_tv_us
 //   B) EVENT_UNKNOWN
 //   C) One or more of EVENT_*_READABLE or'ed together
 //
-static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open, struct timeval * timeout) {
+static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open,
+                           struct timeval *timeout) {
     fd_set read_fds;
     FD_ZERO(&read_fds);
     FD_SET(signal_read_fd, &read_fds);
@@ -510,23 +531,23 @@ int main(int argc, char *argv[]) {
     fake_clock = (getenv("FAKETIME") != NULL);
 
     setlocale(LC_ALL, "");
-    if (MB_CUR_MAX > 1)            // if non-ASCII characters are supported:
-        plotchar.chars[0]=0x2502;  // U+2502 box drawings light vertical
+    if (MB_CUR_MAX > 1)              // if non-ASCII characters are supported:
+        plotchar.chars[0] = 0x2502;  // U+2502 box drawings light vertical
     else
-        plotchar.chars[0]='|';     // U+007C vertical line
-    max_errchar.chars[0]='e';
-    min_errchar.chars[0]='v';
+        plotchar.chars[0] = '|';  // U+007C vertical line
+    max_errchar.chars[0] = 'e';
+    min_errchar.chars[0] = 'v';
 
     cached_opterr = opterr;
-    opterr=0;
+    opterr = 0;
 
     show_ver = 0;
     show_usage = 0;
 
     // Run a 1st iteration over the arguments to check for usage,
     // version or error.
-    while((c=getopt(argc, argv, optstring)) != -1) {
-        switch(c) {
+    while ((c = getopt(argc, argv, optstring)) != -1) {
+        switch (c) {
             case 'v':
                 show_ver = 1;
                 break;
@@ -554,17 +575,18 @@ int main(int argc, char *argv[]) {
     // (or 0 in some special cases). On BSDs and Macs optreset must be set to 1
     // in addition.
     optind = 1;
-#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || \
+    defined(__DragonFly__) || defined(__APPLE__)
     optreset = 1;
 #endif
 
-    while((c=getopt(argc, argv, optstring)) != -1) {
-        switch(c) {
+    while ((c = getopt(argc, argv, optstring)) != -1) {
+        switch (c) {
             case 'r':
-                rate=1;
+                rate = 1;
                 break;
             case '2':
-                two=1;
+                two = 1;
                 break;
             case 'c':
                 mbtowc(&plotchar.chars[0], optarg, MB_CUR_MAX);
@@ -576,16 +598,16 @@ int main(int argc, char *argv[]) {
                 mbtowc(&min_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
             case 's':
-                softmax=atof(optarg);
+                softmax = atof(optarg);
                 break;
             case 'm':
-                hardmax=atof(optarg);
+                hardmax = atof(optarg);
                 break;
             case 'M':
-                hardmin=atof(optarg);
-                for(i=0;i<1024;i++){
-                    values1[i]=hardmin;
-                    values2[i]=hardmin;
+                hardmin = atof(optarg);
+                for (i = 0; i < 1024; i++) {
+                    values1[i] = hardmin;
+                    values2[i] = hardmin;
                 }
                 break;
             case 't':
@@ -599,17 +621,17 @@ int main(int argc, char *argv[]) {
 
     opterr = cached_opterr;
 
-    if(softmax <= hardmin)
+    if (softmax <= hardmin)
         softmax = hardmin + 1;
-    if(hardmax <= hardmin)
+    if (hardmax <= hardmin)
         hardmax = FLT_MAX;
 
     initscr(); /* uses filesystem, so before pledge */
 
-    #ifdef __OpenBSD__
+#ifdef __OpenBSD__
     if (pledge("stdio tty", NULL) == -1)
         err(1, "pledge");
-    #endif
+#endif
 
     gettimeofday(&now, NULL);
     noecho();
@@ -622,7 +644,7 @@ int main(int argc, char *argv[]) {
 
     // If stdin is redirected, open the terminal for reading user's keystrokes.
     int tty = -1;
-    if (!isatty(STDIN_FILENO))
+    if (! isatty(STDIN_FILENO))
         tty = open("/dev/tty", O_RDONLY);
     if (tty != -1) {
         // Disable input line buffering. The function below works even when stdin
@@ -641,10 +663,11 @@ int main(int argc, char *argv[]) {
     signal(SIGWINCH, signal_handler);
     signal(SIGINT, signal_handler);
 
-    while(1) {
+    while (1) {
         struct timeval timeout = calculate_clock_refresh_timeout_from(now.tv_usec);
 
-        const int events = wait_for_events(signal_read_fd, tty, stdin_is_open, &timeout);
+        const int events =
+            wait_for_events(signal_read_fd, tty, stdin_is_open, &timeout);
 
         // Refresh the clock if the seconds have changed.
         const time_t displayed_time = now.tv_sec;
@@ -674,9 +697,9 @@ int main(int argc, char *argv[]) {
         if (events & EVENT_TTY_READABLE) {
             char key;
             int count = read(tty, &key, 1);
-            if (count == 1) {  // we did catch a keystroke
+            if (count == 1) {    // we did catch a keystroke
                 if (key == 'r')  // 'r' = toggle rate mode
-                    rate = !rate;
+                    rate = ! rate;
                 else if (key == 'q')  // 'q' = quit
                     break;
             } else if (count == 0) {
