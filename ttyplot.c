@@ -39,7 +39,7 @@
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 6
-#define VERSION_PATCH 0
+#define VERSION_PATCH 1
 #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 
 #define T_RARR '>'
@@ -282,7 +282,10 @@ static void paint_plot(void) {
 // (Related: https://stackoverflow.com/q/62315082)
 static void signal_handler(int signum) {
     const unsigned char signal_number = (unsigned char) signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
-    write(signal_write_fd, &signal_number, 1);
+    ssize_t write_res;
+    do {
+        write_res = write(signal_write_fd, &signal_number, 1);
+    } while ((write_res == -1) && (errno == EINTR));
 }
 
 static void redraw_screen(const char * errstr) {
@@ -478,7 +481,7 @@ static int wait_for_events(int signal_read_fd, int tty, bool stdin_is_open, stru
             ret |= EVENT_SIGNAL_READABLE;
         }
 
-        if (FD_ISSET(tty, &read_fds)) {
+        if ((tty != -1) && FD_ISSET(tty, &read_fds)) {
             ret |= EVENT_TTY_READABLE;
         }
 

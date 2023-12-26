@@ -1,5 +1,5 @@
 name: ttyplot
-version: 1.6.0
+version: 1.6.1
 summary: realtime plotting utility for terminal/console with data input from stdin
 description: |
   takes data from standard input / unix pipeline,
