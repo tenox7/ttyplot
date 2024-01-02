@@ -1,9 +1,16 @@
 DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
+
+# Optional, thus no override.
+
 CFLAGS += -Wall -Wextra
-CFLAGS += `pkg-config --cflags ncursesw`
-LDLIBS += `pkg-config --libs ncursesw` -lm
+
+# The following variables are overridden because the ncursesw flags are
+# required for a successful build.
+
+override CFLAGS += $(shell pkg-config --cflags ncursesw)
+override LDLIBS += $(shell pkg-config --libs ncursesw) -lm
 
 all: ttyplot stresstest
 
