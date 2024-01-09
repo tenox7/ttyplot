@@ -123,7 +123,7 @@ jobs:
 
           ${MAKE} --version 2>/dev/null || true
 
-          CFLAGS="-std=gnu99 -pedantic -Werror ${sanitizer} -O1" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
+          CFLAGS="-std=c99 -pedantic -Werror ${sanitizer} -O1" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
 
       - name: 'Install'
         env:
