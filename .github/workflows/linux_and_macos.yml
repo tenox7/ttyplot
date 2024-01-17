@@ -40,6 +40,12 @@ jobs:
             clang_repo_suffix:
             make: bmake
             runs-on: ubuntu-22.04
+          - cc: musl-gcc
+            cxx: 'false'
+            clang_major_version: null
+            clang_repo_suffix: null
+            make: bmake
+            runs-on: ubuntu-22.04
           - cc: gcc-11
             cxx: g++-11
             clang_major_version: null
@@ -74,6 +80,7 @@ jobs:
           sudo apt-get install --yes --no-install-recommends \
             bmake \
             libncurses-dev \
+            musl-tools \
             pkg-config
 
       - name: Install build dependencies
@@ -101,6 +108,46 @@ jobs:
       - name: Checkout Git branch
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
 
+      - name: Build musl Ncurses
+        if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'musl') }}"
+        run: |-
+          set -x -o pipefail
+
+          sudo apt-get remove --yes libncurses-dev  # to be sure to not mix them
+
+          wget -q https://invisible-island.net/datafiles/release/ncurses.tar.gz
+          tar xf ncurses.tar.gz
+          pushd ncurses-*/
+          configure_args=(
+            # Redirect everything to musl
+            CC=musl-gcc
+            --prefix=/usr
+            --includedir=/usr/include/x86_64-linux-musl
+            --libdir=/usr/lib/x86_64-linux-musl
+
+            # Enable things we rely on
+            --enable-pc-files
+            --enable-shared
+            --enable-widec
+
+            # Disable things we don't need (to speed up CI)
+            --disable-static
+            --without-cxx-binding
+            --without-manpages
+            --without-progs
+            --without-tack
+            --without-tests
+          )
+          ./configure "${configure_args[@]}"
+          make -j$(nproc)
+          sudo make install
+          popd
+          rm -Rf ncurses-*/ ncurses.tar.gz
+
+          # Mass-fix "#include <x86_64-linux-musl/foo.h>" to "#include <foo.h>"
+          grep -RlF "<x86_64-linux-musl/" /usr/include/x86_64-linux-musl/ \
+              | xargs sudo sed 's,<x86_64-linux-musl/,<,' -i
+
       - name: 'Build'
         env:
           CC: ${{ matrix.cc }}
@@ -117,9 +164,14 @@ jobs:
             as_needed='-Wl,--as-needed'
           fi
 
-          # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
-          # UBSan: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-          sanitizer='-fsanitize=address,undefined -fno-sanitize-recover=all'
+          # musl-gcc does not seem to support linking with sanitizers
+          if [[ ${{ matrix.cc }} =~ musl ]]; then
+            sanitizer=
+          else
+            # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
+            # UBSan: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+            sanitizer='-fsanitize=address,undefined -fno-sanitize-recover=all'
+          fi
 
           ${MAKE} --version 2>/dev/null || true
 
