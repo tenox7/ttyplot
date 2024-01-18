@@ -4,6 +4,12 @@
 // License: Apache 2.0
 //
 
+// This is needed for musl libc
+#if ! defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE < 500)
+#undef _XOPEN_SOURCE  // to address warnings about potential re-definition
+#define _XOPEN_SOURCE 500
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
