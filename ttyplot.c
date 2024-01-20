@@ -2,8 +2,8 @@
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
 // Copyright (c) 2018 by Antoni Sawicki
 // Copyright (c) 2019-2023 by Google LLC
-// Copyright (c) 2023 by Edgar Bonet
-// Copyright (c) 2023 by Sebastian Pipping
+// Copyright (c) 2023-2024 by Edgar Bonet
+// Copyright (c) 2023-2024 by Sebastian Pipping
 // Apache License 2.0
 //
 
@@ -11,6 +11,12 @@
 // define it.
 #ifdef __APPLE__
 #define _XOPEN_SOURCE_EXTENDED
+#else
+// This is needed for musl libc
+#if ! defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE < 500)
+#undef _XOPEN_SOURCE  // to address warnings about potential re-definition
+#define _XOPEN_SOURCE 500
+#endif
 #endif
 
 #include <assert.h>
@@ -40,7 +46,7 @@
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 6
-#define VERSION_PATCH 1
+#define VERSION_PATCH 2
 #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 
 #define T_RARR '>'
