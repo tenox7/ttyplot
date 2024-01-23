@@ -55,6 +55,12 @@ brew install ttyplot
 pkg install ttyplot
 ```
 
+### FreeBSD
+
+```
+pkg install ttyplot
+```
+
 ### misc
 
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases), also [older versions](https://github.com/tenox7/ttyplot/releases/tag/1.4)
@@ -247,16 +253,16 @@ these commands do not work if the standard input is a terminal: in this case qui
 
 **UPDATE** as of version 1.5 ttyplot will print "input stream closed" and wait forever, instead of quititing.
 
-this is by design; your problem is likely that the output is lost when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting)
+this is by design; your problem is likely that the output is lost (terminal erased) when ttyplot exits; this is explained in [the next question below](#ttyplot-erases-screen-when-exiting)
 
-you can also "work around" by adding `sleep`, `read`, `cat` at the end of the stream, etc:
+you can also simply work around it, by adding `sleep`, `read`, `cat` at the end of the stream:
 
 ```
 { echo 1 2 3; cat; } | ttyplot
 ```
 
 ### ttyplot erases screen when exiting
-this is because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite) in xterm-ish terminals; if you use one of these this will likely work around it:
+this is because of [alternate screen](https://invisible-island.net/xterm/xterm.faq.html#xterm_tite) in terminals based on xterm; if you use one of these this will likely work around it:
 
 ```
 echo 1 2 3 | TERM=vt100 ttyplot
