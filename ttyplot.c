@@ -74,13 +74,9 @@ static int signal_read_fd, signal_write_fd;
 static cchar_t plotchar, max_errchar, min_errchar;
 static struct timeval now;
 static double td;
-static struct tm *lt;
-static double max = FLT_MIN;
 static double softmax = FLT_MIN, hardmax = FLT_MAX, hardmin = 0.0;
 static char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
 static double values1[1024] = {0}, values2[1024] = {0};
-static double min1 = FLT_MAX, max1 = FLT_MIN, avg1 = 0;
-static double min2 = FLT_MAX, max2 = FLT_MIN, avg2 = 0;
 static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
            plotwidth = 0, plotheight = 0;
 static bool fake_clock = false;
@@ -242,6 +238,10 @@ static void show_window_size_error(void) {
 }
 
 static void paint_plot(void) {
+    double max = FLT_MIN;
+    double min1 = FLT_MAX, max1 = FLT_MIN, avg1 = 0;
+    double min2 = FLT_MAX, max2 = FLT_MIN, avg2 = 0;
+    struct tm *lt;
     erase();
     getmaxyx(stdscr, height, width);
 
