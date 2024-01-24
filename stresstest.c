@@ -20,17 +20,18 @@
 
 const char help[] =
     "Usage:\n"
-    "  stresstest [-2] [-c] [-g] [-r rate]\n"
+    "  stresstest [-2] [-c] [-g] [-n] [-r rate]\n"
     "  stresstest -h\n"
     "\n"
     "  -h       print this help message and exit\n"
     "  -2       output two waves\n"
     "  -c       randomly chunk the output\n"
     "  -g       occasionally output garbage\n"
+    "  -n       output negative values\n"
     "  -r rate  sample rate in samples/s (default: 100)\n"
     "  -s seed  set random seed\n";
 
-const char optstring[] = "h2cgr:s:";
+const char optstring[] = "h2cgnr:s:";
 
 int main(int argc, char *argv[]) {
     char buffer[1024];
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
     bool two_waves = false;
     bool chunked = false;
     bool add_garbage = false;
+    bool output_negative = false;
     double rate = 100;
     unsigned int seed = time(NULL);
 
@@ -57,6 +59,9 @@ int main(int argc, char *argv[]) {
             case 'g':
                 add_garbage = true;
                 break;
+	    case 'n':
+		output_negative = true;
+		break;
             case 'r':
                 rate = atof(optarg);
                 break;
@@ -78,12 +83,12 @@ int main(int argc, char *argv[]) {
 
     for (unsigned int n = 0;; n += 5) {
         buffer_pos +=
-            sprintf(buffer + buffer_pos, "%.1f\n", (sin(n * M_PI / 180) * 5) + 5);
+            sprintf(buffer + buffer_pos, "%.1f\n", (sin(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
         if (add_garbage && rand() <= RAND_MAX / 5)
             buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         if (two_waves) {
             buffer_pos +=
-                sprintf(buffer + buffer_pos, "%.1f\n", (cos(n * M_PI / 180) * 5) + 5);
+                sprintf(buffer + buffer_pos, "%.1f\n", (cos(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
             if (add_garbage && rand() <= RAND_MAX / 5)
                 buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         }
