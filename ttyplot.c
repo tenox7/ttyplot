@@ -74,7 +74,7 @@ static int signal_read_fd, signal_write_fd;
 static cchar_t plotchar, max_errchar, min_errchar;
 static struct timeval now;
 static double td;
-static double softmax = 0.0, hardmax = FLT_MAX, hardmin = 0.0;
+static double softmax = 0.0, hardmax = FLT_MAX, softmin = 0.0, hardmin = -FLT_MAX;
 static char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
 static double values1[1024] = {0}, values2[1024] = {0};
 static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
@@ -98,7 +98,8 @@ static void usage(void) {
         "  -e character to use for error line when value exceeds hardmax (default: e)\n"
         "  -E character to use for error symbol displayed when value is less than "
         "hardmin (default: v)\n"
-        "  -s initial scale of the plot (can go above if data input has larger value)\n"
+        "  -s initial maximum value (can go above if data input has larger value)\n"
+        "  -S initial minimum value (can go below if data input has smaller value)\n"
         "  -m maximum value, if exceeded draws error line (see -e), upper-limit of "
         "plot scale is fixed\n"
         "  -M minimum value, if entered less than this, draws error symbol (see -E), "
@@ -151,7 +152,7 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
     int i = 0;
 
     *min = FLT_MAX;
-    *max = 0.0;
+    *max = -FLT_MAX;
 
     for (i = 0; i < pw && i < v; i++) {
         if (values[i] > *max)
@@ -198,27 +199,43 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
 }
 
 static void plot_values(int ph, int pw, double *v1, double *v2, double max, double min,
-                        int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hm) {
+                        int n, cchar_t *pc, cchar_t *hce, cchar_t *lce, double hardmax,
+                        double hardmin) {
     const int first_col = 3;
     int i = (n + 1) % pw;
     int x;
-    max -= min;
+    int l1, l2;
 
-    for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw)
-        draw_line(x, ph,
-                  (v1[i] > hm)    ? ph
-                  : (v1[i] < min) ? 1
-                                  : (int)(((v1[i] - min) / max) * (double)ph),
-                  (v2[i] > hm)    ? ph
-                  : (v2[i] < min) ? 1
-                                  : (int)(((v2[i] - min) / max) * (double)ph),
-                  (v1[i] > hm)    ? hce
-                  : (v1[i] < min) ? lce
-                                  : pc,
-                  (v2[i] > hm)    ? hce
-                  : (v2[i] < min) ? lce
-                                  : pc,
+    for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw) {
+        /* suppress drawing uninitialized entries */
+        if (! v1 || isnan(v1[i]))
+            continue;
+
+        if (v1[i] > hardmax)
+            l1 = ph;
+        else if (v1[i] < hardmin)
+            l1 = 0;
+        else
+            l1 = lrint((v1[i] - min) / (max - min) * ph);
+
+        if (! v2 || isnan(v2[i]))
+            l2 = 0;
+        else if (v2[i] > hardmax)
+            l2 = ph;
+        else if (v2[i] < hardmin)
+            l2 = 0;
+        else
+            l2 = lrint((v2[i] - min) / (max - min) * ph);
+
+        draw_line(x, ph, l1, l2,
+                  (v1[i] > hardmax)   ? hce
+                  : (v1[i] < hardmin) ? lce
+                                      : pc,
+                  (v2 && v2[i] > hardmax)   ? hce
+                  : (v2 && v2[i] < hardmin) ? lce
+                                            : pc,
                   hce, lce);
+    }
 }
 
 static void show_all_centered(const char *message) {
@@ -237,9 +254,9 @@ static void show_window_size_error(void) {
 }
 
 static void paint_plot(void) {
-    double max = 0;
-    double min1 = FLT_MAX, max1 = 0, avg1 = 0;
-    double min2 = FLT_MAX, max2 = 0, avg2 = 0;
+    double min, max;
+    double min1 = FLT_MAX, max1 = -FLT_MAX, avg1 = 0;
+    double min2 = FLT_MAX, max2 = -FLT_MAX, avg2 = 0;
     struct tm *lt;
     erase();
     getmaxyx(stdscr, height, width);
@@ -252,15 +269,17 @@ static void paint_plot(void) {
     getminmax(plotwidth, values1, &min1, &max1, &avg1, v);
     getminmax(plotwidth, values2, &min2, &max2, &avg2, v);
 
-    if (max1 > max2)
-        max = max1;
-    else
-        max = max2;
-
+    max = max1 > max2 ? max1 : max2;
     if (max < softmax)
         max = softmax;
     if (hardmax != FLT_MAX)
         max = hardmax;
+
+    min = min1 < min2 ? min1 : min2;
+    if (min > softmin)
+        min = softmin;
+    if (hardmin != -FLT_MAX)
+        min = hardmin;
 
     mvaddstr(height - 1, width - strlen(verstring) - 1, verstring);
 
@@ -289,10 +308,10 @@ static void paint_plot(void) {
         }
     }
 
-    plot_values(plotheight, plotwidth, values1, values2, max, hardmin, n, &plotchar,
-                &max_errchar, &min_errchar, hardmax);
+    plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
+                &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
 
-    draw_axes(height, plotheight, plotwidth, max, hardmin, unit);
+    draw_axes(height, plotheight, plotwidth, max, min, unit);
 
     mvaddstr(0, (width / 2) - (strlen(title) / 2), title);
 
@@ -527,9 +546,16 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:m:M:t:u:vh";
+    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vh";
     int show_ver;
     int show_usage;
+
+    // Initialize values to NAN, rather than 0, so that we know when not to
+    // draw them
+    for (i = 0; i < (int)(sizeof(values1) / sizeof(*values1)); i++) {
+        values1[i] = NAN;
+        values2[i] = NAN;
+    }
 
     // To make UI testing more robust, we display a clock that is frozen at
     // "Thu Jan  1 00:00:03 1970" when variable FAKETIME is set
@@ -605,15 +631,14 @@ int main(int argc, char *argv[]) {
             case 's':
                 softmax = atof(optarg);
                 break;
+            case 'S':
+                softmin = atof(optarg);
+                break;
             case 'm':
                 hardmax = atof(optarg);
                 break;
             case 'M':
                 hardmin = atof(optarg);
-                for (i = 0; i < 1024; i++) {
-                    values1[i] = hardmin;
-                    values2[i] = hardmin;
-                }
                 break;
             case 't':
                 snprintf(title, sizeof(title), "%s", optarg);

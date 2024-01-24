@@ -59,9 +59,9 @@ int main(int argc, char *argv[]) {
             case 'g':
                 add_garbage = true;
                 break;
-	    case 'n':
-		output_negative = true;
-		break;
+            case 'n':
+                output_negative = true;
+                break;
             case 'r':
                 rate = atof(optarg);
                 break;
@@ -82,13 +82,14 @@ int main(int argc, char *argv[]) {
     srand(seed);
 
     for (unsigned int n = 0;; n += 5) {
-        buffer_pos +=
-            sprintf(buffer + buffer_pos, "%.1f\n", (sin(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
+        buffer_pos += sprintf(buffer + buffer_pos, "%.1f\n",
+                              (sin(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
         if (add_garbage && rand() <= RAND_MAX / 5)
             buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         if (two_waves) {
             buffer_pos +=
-                sprintf(buffer + buffer_pos, "%.1f\n", (cos(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
+                sprintf(buffer + buffer_pos, "%.1f\n",
+                        (cos(n * M_PI / 180) * 5) + (output_negative ? 0 : 5));
             if (add_garbage && rand() <= RAND_MAX / 5)
                 buffer_pos += sprintf(buffer + buffer_pos, "garbage ");
         }
