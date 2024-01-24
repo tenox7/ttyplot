@@ -74,7 +74,7 @@ static int signal_read_fd, signal_write_fd;
 static cchar_t plotchar, max_errchar, min_errchar;
 static struct timeval now;
 static double td;
-static double softmax = FLT_MIN, hardmax = FLT_MAX, hardmin = 0.0;
+static double softmax = 0.0, hardmax = FLT_MAX, hardmin = 0.0;
 static char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
 static double values1[1024] = {0}, values2[1024] = {0};
 static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
@@ -151,8 +151,7 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
     int i = 0;
 
     *min = FLT_MAX;
-    *max = FLT_MIN;
-    tot = FLT_MIN;
+    *max = 0.0;
 
     for (i = 0; i < pw && i < v; i++) {
         if (values[i] > *max)
@@ -238,9 +237,9 @@ static void show_window_size_error(void) {
 }
 
 static void paint_plot(void) {
-    double max = FLT_MIN;
-    double min1 = FLT_MAX, max1 = FLT_MIN, avg1 = 0;
-    double min2 = FLT_MAX, max2 = FLT_MIN, avg2 = 0;
+    double max = 0;
+    double min1 = FLT_MAX, max1 = 0, avg1 = 0;
+    double min2 = FLT_MAX, max2 = 0, avg2 = 0;
     struct tm *lt;
     erase();
     getmaxyx(stdscr, height, width);
