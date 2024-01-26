@@ -214,7 +214,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         if (v1[i] > hardmax)
             l1 = ph;
         else if (v1[i] < hardmin)
-            l1 = 0;
+            l1 = 1;
         else
             l1 = lrint((v1[i] - min) / (max - min) * ph);
 
@@ -223,7 +223,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         else if (v2[i] > hardmax)
             l2 = ph;
         else if (v2[i] < hardmin)
-            l2 = 0;
+            l2 = 1;
         else
             l2 = lrint((v2[i] - min) / (max - min) * ph);
 
