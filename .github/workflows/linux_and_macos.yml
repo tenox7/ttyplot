@@ -28,16 +28,10 @@ jobs:
             clang_repo_suffix: null
             make: make
             runs-on: ubuntu-22.04
-          - cc: clang-17
-            cxx: clang++-17
-            clang_major_version: 17
-            clang_repo_suffix: -17
-            make: bmake
-            runs-on: ubuntu-22.04
           - cc: clang-18
             cxx: clang++-18
             clang_major_version: 18
-            clang_repo_suffix:
+            clang_repo_suffix: -18
             make: bmake
             runs-on: ubuntu-22.04
           - cc: musl-gcc
