@@ -37,7 +37,7 @@ jobs:
           - cc: clang-18
             cxx: clang++-18
             clang_major_version: 18
-            clang_repo_suffix:
+            clang_repo_suffix: -18
             make: bmake
             runs-on: ubuntu-22.04
           - cc: musl-gcc
