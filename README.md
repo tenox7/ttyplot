@@ -278,14 +278,14 @@ infocmp -I $TERM | sed -e 's/smcup=[^,]*,//g' -e 's/rmcup=[^,]*,//g' | tic -
 press `ctrl^j` to re-set
 
 ### stdio buffering
-by default in unix stdio is buffered, you can work around it in [various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://collectd.org/wiki/index.php/Plugin:Exec#Output_buffering)
+by default in unix stdio is buffered, you can work around it [in various ways](http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html) also [this](https://github.com/collectd/collectd/wiki/Plugin-Exec#output-buffering)
 
 
 ## legal stuff
 ```
 License: Apache 2.0
 Copyright (c) 2013-2018 Antoni Sawicki
-Copyright (c) 2019-2023 Google LLC
+Copyright (c) 2019-2024 Google LLC
 Copyright (c) 2023 Edgar Bonet
 Copyright (c) 2023 Sebastian Pipping
 ```
