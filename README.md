@@ -69,7 +69,7 @@ for other platforms see [releases tab](https://github.com/tenox7/ttyplot/release
 
 ### cpu usage from vmstat using awk to pick the right column
 
-fflush() is needed to disable stdio buffering
+`fflush()` is needed to disable stdio buffering
 
 ```
 vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot -s 100 -t "CPU Usage" -u "%"
@@ -77,7 +77,7 @@ vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot -s 100 -t "
 
 ### memory usage on Linux using free, grep, tr and cut
 
-stdbuf is used to disable stdio buffering throughout the pipeline
+`stdbuf` is used to disable stdio buffering throughout the pipeline
 
 ```
 free -m -s 1 | stdbuf -o0 grep "^Mem:" | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d" " -f3 | ttyplot -t "MEM Usage" -u "MB"
