@@ -68,32 +68,43 @@ for other platforms see [releases tab](https://github.com/tenox7/ttyplot/release
 ## examples
 
 ### cpu usage from vmstat using awk to pick the right column
+
+fflush() is needed to disable stdio buffering
+
 ```
 vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot -s 100 -t "CPU Usage" -u "%"
 ```
 
-### memory usage from sar, using perl to pick the right column
+### memory usage on Linux using free, grep, tr and cut
+
+stdbuf is used to disable stdio buffering throughout the pipeline
+
 ```
-sar -r 1 | perl -lane 'BEGIN{$|=1} print "@F[5]"' | ttyplot -s 100 -t "memory used %" -u "%"
+free -m -s 1 | stdbuf -o0 grep "^Mem:" | stdbuf -o0 tr -s " " | stdbuf -o0 cut -d" " -f3 | ttyplot -t "MEM Usage" -u "MB"
 ```
 
 ### memory usage on macOS
+
 ```
 vm_stat 1 | awk '{ print int($2)*4096/1024^3; fflush(); }' | ttyplot -t "MacOS Memory Usage" -u GB
 ```
 
 ### number of processes in running and io blocked state
+
 ```
 vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -2 -t "procs in R and D state"
 ```
 
 ### load average via uptime and awk
+
 ```
 { while true; do uptime | gawk '{ gsub(/,/, ""); print $(NF-2) }'; sleep 1; done } | ttyplot -t "load average" -s load
 ```
 
 ### ping plot with sed
+
 on macOS change `-u` to `-l`
+
 ```
 ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms
 ```
