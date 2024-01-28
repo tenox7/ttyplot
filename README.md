@@ -69,12 +69,7 @@ for other platforms see [releases tab](https://github.com/tenox7/ttyplot/release
 
 ### cpu usage from vmstat using awk to pick the right column
 ```
-vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot
-```
-
-### cpu usage from sar with title and fixed scale to 100%
-```
-sar 1 | gawk '{ print 100-int($NF); fflush(); }' | ttyplot -s 100 -t "cpu usage" -u "%"
+vmstat -n 1 | gawk '{ print 100-int($(NF-2)); fflush(); }' | ttyplot -s 100 -t "CPU Usage" -u "%"
 ```
 
 ### memory usage from sar, using perl to pick the right column
