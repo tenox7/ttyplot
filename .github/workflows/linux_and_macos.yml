@@ -100,7 +100,7 @@ jobs:
           sudo ln -s "$(brew --prefix llvm@${{ matrix.clang_major_version }})"/bin/clang++ /usr/local/bin/clang++-${{ matrix.clang_major_version }}
 
       - name: Checkout Git branch
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4.1.2
 
       - name: Build musl Ncurses
         if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'musl') }}"
