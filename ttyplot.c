@@ -1,6 +1,6 @@
 //
 // ttyplot: a realtime plotting utility for terminal with data input from stdin
-// Copyright (c) 2018 by Antoni Sawicki
+// Copyright (c) 2018-2024 by Antoni Sawicki
 // Copyright (c) 2019-2023 by Google LLC
 // Copyright (c) 2023-2024 by Edgar Bonet
 // Copyright (c) 2023-2024 by Sebastian Pipping
@@ -46,7 +46,7 @@
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 6
-#define VERSION_PATCH 2
+#define VERSION_PATCH 4
 #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 
 #define T_RARR '>'
