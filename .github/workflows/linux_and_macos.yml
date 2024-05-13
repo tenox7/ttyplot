@@ -205,8 +205,10 @@ jobs:
             ################################################################
           EOF
 
+          eval `grep ^VERSION Makefile | tr -d ' '`
+          sed "s/@VERSION@/$VERSION/" recordings/template.txt > recordings/expected.txt
           diff -u recordings/{expected,actual}.txt
-          rm -f recordings/actual.txt
+          rm -f recordings/{expected,actual}.txt
 
       - name: 'Clean'
         env:
