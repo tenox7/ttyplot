@@ -78,7 +78,7 @@ static double softmax = 0.0, hardmax = FLT_MAX, softmin = 0.0, hardmin = -FLT_MA
 static char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
 static double values1[1024] = {0}, values2[1024] = {0};
 static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
-           plotwidth = 0, plotheight = 0;
+           plotwidth = 0, plotheight = 0, log_scale = 0;
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
@@ -87,12 +87,13 @@ static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 static void usage(void) {
     printf(
         "Usage:\n"
-        "  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u "
+        "  ttyplot [-2] [-l] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u "
         "unit]\n"
         "  ttyplot -h\n"
         "  ttyplot -v\n"
         "\n"
         "  -2 read two values and draw two plots, the second one is in reverse video\n"
+        "  -l plot values using log10 scale\n"
         "  -r rate of a counter (divide value by measured sample interval)\n"
         "  -c character to use for plot line, eg @ # %% . etc\n"
         "  -e character to use for error line when value exceeds hardmax (default: e)\n"
@@ -167,14 +168,32 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
     *avg = tot / i;
 }
 
+static int sign(double x) {
+    return x < 0 ? -1 : 1;
+}
+
+static double abs_log10(double x) {
+    return lrint(x) == 0 ? 0 : log10(labs(lrint(x))) * sign(x);
+}
+
+static double unscale(double x) {
+    return log_scale ? pow(10, fabs(x)) * sign(x) : x;
+}
+
+static double scale_val(double x) {
+    return log_scale ? abs_log10(x) : x;
+}
+
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
+    const double scale_max = scale_val(max);
+    const double scale_min = scale_val(min);
     mvhline(h - 3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
     if (max - min >= 0.1) {
         mvprintw(1, 4, "%.1f %s", max, unit);
-        mvprintw((ph / 4) + 1, 4, "%.1f %s", min / 4 + max * 3 / 4, unit);
-        mvprintw((ph / 2) + 1, 4, "%.1f %s", min / 2 + max / 2, unit);
-        mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", min * 3 / 4 + max / 4, unit);
+        mvprintw((ph / 4) + 1, 4, "%.1f %s", unscale(scale_min / 4 + scale_max * 3 / 4), unit);
+        mvprintw((ph / 2) + 1, 4, "%.1f %s", unscale(scale_min / 2 + scale_max / 2), unit);
+        mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", unscale(scale_min * 3 / 4 + scale_max / 4), unit);
     }
     mvaddch(h - 3, 2 + pw, T_RARR);
     mvaddch(1, 2, T_UARR);
@@ -216,7 +235,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         else if (v1[i] < hardmin)
             l1 = 1;
         else
-            l1 = lrint((v1[i] - min) / (max - min) * ph);
+            l1 = lrint(scale_val(v1[i] - min) / scale_val(max - min) * ph);
 
         if (! v2 || isnan(v2[i]))
             l2 = 0;
@@ -225,7 +244,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         else if (v2[i] < hardmin)
             l2 = 1;
         else
-            l2 = lrint((v2[i] - min) / (max - min) * ph);
+            l2 = lrint(scale_val(v2[i] - min) / scale_val(max - min) * ph);
 
         draw_line(x, ph, l1, l2,
                   (v1[i] > hardmax)   ? hce
@@ -546,7 +565,7 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vh";
+    const char *optstring = "2rlc:e:E:s:S:m:M:t:u:vh";
     int show_ver;
     int show_usage;
 
@@ -618,6 +637,9 @@ int main(int argc, char *argv[]) {
                 break;
             case '2':
                 two = 1;
+                break;
+            case 'l':
+                log_scale = 1;
                 break;
             case 'c':
                 mbtowc(&plotchar.chars[0], optarg, MB_CUR_MAX);

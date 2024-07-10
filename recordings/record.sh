@@ -33,3 +33,7 @@ rm -f actual.txt
 ./flip_book.py \
     timeout -s INT 5 sh -c '{ sleep 2.5; seq 4; sleep 1.5; } | MallocNanoZone=0 ttyplot -2 -c X' 2>&1 \
     | tee actual.txt
+# Record test run with log10 scale
+./flip_book.py \
+    timeout -s INT 5 sh -c '{ sleep 2.5; OFS=\n echo 10 100 1000 10000; sleep 1.5; } | MallocNanoZone=0 ttyplot -2 -c X -l' 2>&1 \
+    | tee -a actual.txt
