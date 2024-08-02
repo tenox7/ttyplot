@@ -45,8 +45,8 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 6
-#define VERSION_PATCH 5
+#define VERSION_MINOR 7
+#define VERSION_PATCH 0
 #define VERSION_STR STR(VERSION_MAJOR) "." STR(VERSION_MINOR) "." STR(VERSION_PATCH)
 
 #define T_RARR '>'
@@ -82,6 +82,7 @@ static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
+static int plot_color = -1;  // -1 means no color specified
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
@@ -106,6 +107,7 @@ static void usage(void) {
         "lower-limit of the plot scale is fixed\n"
         "  -t title of the plot\n"
         "  -u unit displayed beside vertical bar\n"
+        "  -C color  set the color of the plot line (0-7 for basic colors)\n"
         "  -v print the current version and exit\n"
         "  -h print this help message and exit\n"
         "\n"
@@ -187,6 +189,15 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     cchar_t c1r = *c1, c2r = *c2;
     c1r.attr |= A_REVERSE;
     c2r.attr |= A_REVERSE;
+
+    if (plot_color != -1) {
+        c1->attr |= COLOR_PAIR(1);
+        c2->attr |= COLOR_PAIR(1);
+        c1r.attr |= COLOR_PAIR(1);
+        c2r.attr |= COLOR_PAIR(1);
+        space.attr |= COLOR_PAIR(1);
+    }
+
     if (l1 > l2) {
         mvvline_set(ph + 1 - l1, x, c1, l1 - l2);
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
@@ -195,6 +206,14 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         mvvline_set(ph + 1 - l1, x, &c2r, l1);
     } else {
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
+    }
+
+    if (plot_color != -1) {
+        c1->attr &= ~COLOR_PAIR(1);
+        c2->attr &= ~COLOR_PAIR(1);
+        c1r.attr &= ~COLOR_PAIR(1);
+        c2r.attr &= ~COLOR_PAIR(1);
+        space.attr &= ~COLOR_PAIR(1);
     }
 }
 
@@ -205,6 +224,9 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
     int i = (n + 1) % pw;
     int x;
     int l1, l2;
+
+    if (plot_color != -1)
+        attron(COLOR_PAIR(1));
 
     for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw) {
         /* suppress drawing uninitialized entries */
@@ -236,6 +258,9 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                                             : pc,
                   hce, lce);
     }
+
+    if (plot_color != -1)
+        attroff(COLOR_PAIR(1));
 }
 
 static void show_all_centered(const char *message) {
@@ -546,7 +571,7 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vh";
+    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vhC:";
     int show_ver;
     int show_usage;
 
@@ -628,6 +653,9 @@ int main(int argc, char *argv[]) {
             case 'E':
                 mbtowc(&min_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
+            case 'C':
+                plot_color = atoi(optarg);
+                break;
             case 's':
                 softmax = atof(optarg);
                 break;
@@ -662,6 +690,12 @@ int main(int argc, char *argv[]) {
     if (pledge("stdio tty", NULL) == -1)
         err(1, "pledge");
 #endif
+
+    if (plot_color != -1) {
+        start_color();
+        use_default_colors();
+        init_pair(1, plot_color, -1);  // -1 for default background
+    }
 
     gettimeofday(&now, NULL);
     noecho();
