@@ -37,7 +37,7 @@ jobs:
             clang_repo_suffix: null
             make: bmake
             runs-on: ubuntu-22.04
-          - cc: gcc-11
+          - cc: gcc-12
             clang_major_version: null
             clang_repo_suffix: null
             make: make
