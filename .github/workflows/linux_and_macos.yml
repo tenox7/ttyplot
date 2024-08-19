@@ -23,44 +23,38 @@ jobs:
       matrix:
         include:
           - cc: gcc-14
-            cxx: g++-14
             clang_major_version: null
             clang_repo_suffix: null
             make: make
             runs-on: ubuntu-24.04
           - cc: clang-18
-            cxx: clang++-18
             clang_major_version: 18
             clang_repo_suffix: -18
             make: bmake
             runs-on: ubuntu-22.04
           - cc: musl-gcc
-            cxx: 'false'
             clang_major_version: null
             clang_repo_suffix: null
             make: bmake
             runs-on: ubuntu-22.04
           - cc: gcc-11
-            cxx: g++-11
             clang_major_version: null
             clang_repo_suffix: null
             make: make
             runs-on: macos-12
           - cc: gcc-13
-            cxx: g++-13
             clang_major_version: null
             clang_repo_suffix: null
             make: bmake
             runs-on: macos-12
           - cc: clang-15
-            cxx: clang++-15
             clang_major_version: 15
             clang_repo_suffix: null
             make: bsdmake
             runs-on: macos-12
     steps:
       - name: Add Clang/LLVM repositories
-        if: "${{ runner.os == 'Linux' && contains(matrix.cxx, 'clang') }}"
+        if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
         run: |-
           set -x
           source /etc/os-release
@@ -86,14 +80,14 @@ jobs:
             coreutils
 
       - name: Install build dependency Clang ${{ matrix.clang_major_version }}
-        if: "${{ runner.os == 'Linux' && contains(matrix.cxx, 'clang') }}"
+        if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
         run: |-
           sudo apt-get install --yes --no-install-recommends -V \
               clang-${{ matrix.clang_major_version }} \
               libclang-rt-${{ matrix.clang_major_version }}-dev
 
       - name: Add versioned aliases for Clang ${{ matrix.clang_major_version }}
-        if: "${{ runner.os == 'macOS' && contains(matrix.cxx, 'clang') }}"
+        if: "${{ runner.os == 'macOS' && contains(matrix.cc, 'clang') }}"
         run: |-
           set -x
           sudo ln -s "$(brew --prefix llvm@${{ matrix.clang_major_version }})"/bin/clang   /usr/local/bin/clang-${{ matrix.clang_major_version }}
@@ -145,7 +139,6 @@ jobs:
       - name: 'Build'
         env:
           CC: ${{ matrix.cc }}
-          CXX: ${{ matrix.cxx }}
           MAKE: ${{ matrix.make }}
         run: |-
           set -x
