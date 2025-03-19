@@ -201,6 +201,12 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
 { while true; do curl -s http://10.11.0.173:9100/metrics | awk '/^node_disk_.+_bytes_total{device="sda"}/ { printf("%f\n", $2/1024/1024); }'; sleep 1; done } | ttyplot -r -2 -u MB/s -t "10.11.0.173 sda writes"
 ```
 
+### using colors for different elements
+```
+ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -u ms -C 2,3,4,5
+```
+This example sets color 2 (green) for the plot line, color 3 (yellow) for the axes, color 4 (blue) for the text, and color 5 (magenta) for the title and messages.
+
 ### network throughput from collectd with rrdtool and awk
 ```
 { while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/interface-enp1s0/if_octets.rrd | awk 'END { print ($2)/1000/1000, ($3)/1000/1000 }'; sleep 10; done } | ttyplot -2 -r -t "enp1s0 throughput" -u MB/s
@@ -229,6 +235,13 @@ ttyplot also supports *counter* style metrics, calculating *rate* by measured ti
   -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed
   -t title of the plot
   -u unit displayed beside vertical bar
+  -C color[,axes,text,title]  set colors (0-7) for elements:
+     First value: plot line color
+     Second value: axes color (optional)
+     Third value: text color (optional)
+     Fourth value: title color (optional)
+     Example: -C 1,2,3,4 or -C 1,2 or -C 1
+     Colors: 0=black, 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
   -v print the current version and exit
   -h print this help message and exit
 ```

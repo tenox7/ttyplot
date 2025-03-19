@@ -82,7 +82,8 @@ static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
-static int plot_color = -1;  // -1 means no color specified
+// Color indices: 0=plot_line, 1=axes, 2=text, 3=title
+static int colors[4] = {-1, -1, -1, -1};  // -1 means no color specified
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
@@ -107,7 +108,12 @@ static void usage(void) {
         "lower-limit of the plot scale is fixed\n"
         "  -t title of the plot\n"
         "  -u unit displayed beside vertical bar\n"
-        "  -C color  set the color of the plot line (0-7 for basic colors)\n"
+        "  -C color[,axes,text,title]  set colors (0-7) for elements:\n"
+        "     First value: plot line color\n"
+        "     Second value: axes color (optional)\n"
+        "     Third value: text color (optional)\n"
+        "     Fourth value: title color (optional)\n"
+        "     Example: -C 1,2,3,4 or -C 1,2 or -C 1\n"
         "  -v print the current version and exit\n"
         "  -h print this help message and exit\n"
         "\n"
@@ -170,17 +176,34 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
 }
 
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
+    // Apply axes color if specified
+    if (colors[1] != -1)
+        attron(COLOR_PAIR(2));
+
+    // Draw axes
     mvhline(h - 3, 2, T_HLINE, pw);
     mvvline(2, 2, T_VLINE, ph);
+    mvaddch(h - 3, 2 + pw, T_RARR);
+    mvaddch(1, 2, T_UARR);
+    mvaddch(h - 3, 2, T_LLCR);
+
+    if (colors[1] != -1)
+        attroff(COLOR_PAIR(2));
+
+    // Apply text color for scale labels if specified
+    if (colors[2] != -1)
+        attron(COLOR_PAIR(3));
+
+    // Print scale labels
     if (max - min >= 0.1) {
         mvprintw(1, 4, "%.1f %s", max, unit);
         mvprintw((ph / 4) + 1, 4, "%.1f %s", min / 4 + max * 3 / 4, unit);
         mvprintw((ph / 2) + 1, 4, "%.1f %s", min / 2 + max / 2, unit);
         mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", min * 3 / 4 + max / 4, unit);
     }
-    mvaddch(h - 3, 2 + pw, T_RARR);
-    mvaddch(1, 2, T_UARR);
-    mvaddch(h - 3, 2, T_LLCR);
+
+    if (colors[2] != -1)
+        attroff(COLOR_PAIR(3));
 }
 
 static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
@@ -190,7 +213,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     c1r.attr |= A_REVERSE;
     c2r.attr |= A_REVERSE;
 
-    if (plot_color != -1) {
+    if (colors[0] != -1) {
         c1->attr |= COLOR_PAIR(1);
         c2->attr |= COLOR_PAIR(1);
         c1r.attr |= COLOR_PAIR(1);
@@ -208,7 +231,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
     }
 
-    if (plot_color != -1) {
+    if (colors[0] != -1) {
         c1->attr &= ~COLOR_PAIR(1);
         c2->attr &= ~COLOR_PAIR(1);
         c1r.attr &= ~COLOR_PAIR(1);
@@ -225,7 +248,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
     int x;
     int l1, l2;
 
-    if (plot_color != -1)
+    if (colors[0] != -1)
         attron(COLOR_PAIR(1));
 
     for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw) {
@@ -259,7 +282,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                   hce, lce);
     }
 
-    if (plot_color != -1)
+    if (colors[0] != -1)
         attroff(COLOR_PAIR(1));
 }
 
@@ -267,7 +290,15 @@ static void show_all_centered(const char *message) {
     const size_t message_len = strlen(message);
     const int x = ((int)message_len > width) ? 0 : (width / 2 - (int)message_len / 2);
     const int y = height / 2;
+
+    // Apply title color to error messages if specified
+    if (colors[3] != -1)
+        attron(COLOR_PAIR(4));
+
     mvaddnstr(y, x, message, width);
+
+    if (colors[3] != -1)
+        attroff(COLOR_PAIR(4));
 }
 
 static int window_big_enough_to_draw(void) {
@@ -306,6 +337,10 @@ static void paint_plot(void) {
     if (hardmin != -FLT_MAX)
         min = hardmin;
 
+    // Apply text color if specified
+    if (colors[2] != -1)
+        attron(COLOR_PAIR(3));
+
     mvaddstr(height - 1, width - strlen(verstring) - 1, verstring);
 
     const char *clock_display;
@@ -317,6 +352,13 @@ static void paint_plot(void) {
         clock_display = ls;
     }
     mvaddstr(height - 2, width - strlen(clock_display), clock_display);
+
+    if (colors[2] != -1)
+        attroff(COLOR_PAIR(3));
+
+    // Apply text color for stats
+    if (colors[2] != -1)
+        attron(COLOR_PAIR(3));
 
     mvvline_set(height - 2, 5, &plotchar, 1);
     if (v > 0) {
@@ -333,12 +375,22 @@ static void paint_plot(void) {
         }
     }
 
+    if (colors[2] != -1)
+        attroff(COLOR_PAIR(3));
+
     plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
                 &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
 
     draw_axes(height, plotheight, plotwidth, max, min, unit);
 
+    // Apply title color if specified
+    if (colors[3] != -1)
+        attron(COLOR_PAIR(4));
+
     mvaddstr(0, (width / 2) - (strlen(title) / 2), title);
+
+    if (colors[3] != -1)
+        attroff(COLOR_PAIR(4));
 
     move(0, 0);
 }
@@ -653,9 +705,19 @@ int main(int argc, char *argv[]) {
             case 'E':
                 mbtowc(&min_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
-            case 'C':
-                plot_color = atoi(optarg);
+            case 'C': {
+                char *color_str = strdup(optarg);
+                char *token = strtok(color_str, ",");
+                int color_idx = 0;
+
+                while (token != NULL && color_idx < 4) {
+                    colors[color_idx++] = atoi(token);
+                    token = strtok(NULL, ",");
+                }
+
+                free(color_str);
                 break;
+            }
             case 's':
                 softmax = atof(optarg);
                 break;
@@ -691,10 +753,30 @@ int main(int argc, char *argv[]) {
         err(1, "pledge");
 #endif
 
-    if (plot_color != -1) {
+    // Check if any colors are defined
+    bool has_colors = false;
+    for (int i = 0; i < 4; i++) {
+        if (colors[i] != -1) {
+            has_colors = true;
+            break;
+        }
+    }
+
+    if (has_colors) {
         start_color();
         use_default_colors();
-        init_pair(1, plot_color, -1);  // -1 for default background
+
+        // Initialize color pairs for different elements
+        // COLOR_PAIR(1): plot line (initialized in original code)
+        // COLOR_PAIR(2): axes
+        // COLOR_PAIR(3): text
+        // COLOR_PAIR(4): title
+
+        for (int i = 0; i < 4; i++) {
+            if (colors[i] != -1) {
+                init_pair(i+1, colors[i], -1);  // -1 for default background
+            }
+        }
     }
 
     gettimeofday(&now, NULL);
