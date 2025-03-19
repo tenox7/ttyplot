@@ -773,7 +773,7 @@ int main(int argc, char *argv[]) {
 
         for (int i = 0; i < 4; i++) {
             if (colors[i] != -1) {
-                init_pair(i+1, colors[i], -1);  // -1 for default background
+                init_pair(i + 1, colors[i], -1);  // -1 for default background
             }
         }
     }
