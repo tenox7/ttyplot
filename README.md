@@ -303,8 +303,7 @@ by default in unix stdio is buffered, you can work around it [in various ways](h
 ## legal stuff
 ```
 License: Apache 2.0
-Copyright (c) 2013-2018 Antoni Sawicki
-Copyright (c) 2019-2024 Google LLC
+Copyright (c) 2013-2025 Antoni Sawicki
 Copyright (c) 2023 Edgar Bonet
 Copyright (c) 2023 Sebastian Pipping
 ```
