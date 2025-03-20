@@ -6,9 +6,9 @@
 // Apache License 2.0
 //
 
-// This is needed on macOS to get the ncurses widechar API, and pkg-config fails to
-// define it.
-#ifdef __APPLE__
+// This is needed on FreeBSD and macOS to get the ncurses widechar API,
+// and pkg-config fails to define it.
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #define _XOPEN_SOURCE_EXTENDED
 #else
 // This is needed for musl libc
