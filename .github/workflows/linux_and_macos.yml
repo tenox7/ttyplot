@@ -180,6 +180,33 @@ jobs:
           ${MAKE} uninstall DESTDIR="${PWD}"/ROOT/
           [[ "$(find ROOT/ -not -type d | tee /dev/stderr)" == '' ]]  # i.e. fail CI if leftover files
 
+      - name: 'Run UI tests'
+        run: |-
+          ./recordings/record.sh
+          rm -Rf recordings/venv/
+
+      - name: 'Upload UI test renderings for inspection'
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a  # v4.3.6
+        with:
+          name: ttyplot_ui_test_${{ github.sha }}_${{ matrix.runs-on }}_${{ matrix.cc }}_${{ matrix.make }}
+          path: recordings/actual*
+          if-no-files-found: error
+
+      - name: 'Evaluate UI test results'
+        run: |-
+          cat <<"EOF"
+            ################################################################
+            ## If this step FAILS you can get the expected ANSI screenshots
+            ## back in sync with reality by running:
+            ##
+            ##   $ ./recordings/get_back_in_sync.sh
+            ##
+            ## More details on the topic can be found in CONTRIBUTING.md .
+            ################################################################
+          EOF
+
+          diff -u recordings/{expected,actual}.txt
+          rm -f recordings/actual.txt
 
       - name: 'Clean'
         env:
