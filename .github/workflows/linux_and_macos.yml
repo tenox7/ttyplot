@@ -37,21 +37,21 @@ jobs:
             clang_repo_suffix: null
             make: bmake
             runs-on: ubuntu-22.04
-          - cc: gcc-12
-            clang_major_version: null
-            clang_repo_suffix: null
-            make: make
-            runs-on: macos-12
           - cc: gcc-13
             clang_major_version: null
             clang_repo_suffix: null
+            make: make
+            runs-on: macos-13
+          - cc: gcc-14
+            clang_major_version: null
+            clang_repo_suffix: null
             make: bmake
-            runs-on: macos-12
-          - cc: clang-15
-            clang_major_version: 15
+            runs-on: macos-14
+          - cc: clang-18
+            clang_major_version: 18
             clang_repo_suffix: null
             make: bsdmake
-            runs-on: macos-12
+            runs-on: macos-15
     steps:
       - name: Add Clang/LLVM repositories
         if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
