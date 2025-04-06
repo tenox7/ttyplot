@@ -151,8 +151,8 @@ jobs:
             as_needed='-Wl,--as-needed'
           fi
 
-          # musl-gcc does not seem to support linking with sanitizers
-          if [[ ${{ matrix.cc }} =~ musl ]]; then
+          # musl-gcc and gcc/macOS do not seem to support linking with sanitizers
+          if [[ ${{ matrix.cc }} =~ musl || ${{ matrix.cc }} =~ gcc && ${{ matrix.runs-on }} =~ macos ]]; then
             sanitizer=
           else
             # ASan: https://clang.llvm.org/docs/AddressSanitizer.html
