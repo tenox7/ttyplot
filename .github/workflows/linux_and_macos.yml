@@ -1,7 +1,7 @@
 # Copyright (c) 2023 Sebastian Pipping <sebastian@pipping.org>
 # Licensed under Apache License Version 2.0
 
-name: Build on Linux
+name: Build on Linux/macOS
 
 on:
   pull_request:
@@ -37,6 +37,21 @@ jobs:
             clang_repo_suffix: null
             make: bmake
             runs-on: ubuntu-22.04
+          - cc: gcc-12
+            clang_major_version: null
+            clang_repo_suffix: null
+            make: make
+            runs-on: macos-12
+          - cc: gcc-13
+            clang_major_version: null
+            clang_repo_suffix: null
+            make: bmake
+            runs-on: macos-12
+          - cc: clang-15
+            clang_major_version: 15
+            clang_repo_suffix: null
+            make: bsdmake
+            runs-on: macos-12
     steps:
       - name: Add Clang/LLVM repositories
         if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
@@ -56,6 +71,13 @@ jobs:
             musl-tools \
             pkg-config
 
+      - name: Install build dependencies
+        if: "${{ runner.os == 'macOS' }}"
+        run: |-
+          brew install \
+            bmake \
+            bsdmake \
+            coreutils
 
       - name: Install build dependency Clang ${{ matrix.clang_major_version }}
         if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
@@ -64,6 +86,12 @@ jobs:
               clang-${{ matrix.clang_major_version }} \
               libclang-rt-${{ matrix.clang_major_version }}-dev
 
+      - name: Add versioned aliases for Clang ${{ matrix.clang_major_version }}
+        if: "${{ runner.os == 'macOS' && contains(matrix.cc, 'clang') }}"
+        run: |-
+          set -x
+          sudo ln -s "$(brew --prefix llvm@${{ matrix.clang_major_version }})"/bin/clang   /usr/local/bin/clang-${{ matrix.clang_major_version }}
+          sudo ln -s "$(brew --prefix llvm@${{ matrix.clang_major_version }})"/bin/clang++ /usr/local/bin/clang++-${{ matrix.clang_major_version }}
 
       - name: Checkout Git branch
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4.1.7
@@ -115,7 +143,13 @@ jobs:
         run: |-
           set -x
 
-          as_needed='-Wl,--as-needed'
+          # macOS default linker does not seem to support --as-needed,
+          # would error out saying "ld: unknown option: --as-needed"
+          if [[ ${{ runner.os }} = macOS ]]; then
+            as_needed=
+          else
+            as_needed='-Wl,--as-needed'
+          fi
 
           # musl-gcc does not seem to support linking with sanitizers
           if [[ ${{ matrix.cc }} =~ musl ]]; then
