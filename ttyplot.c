@@ -81,8 +81,8 @@ static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
-// Color indices: 0=plot_line, 1=axes, 2=text, 3=title
-static int colors[4] = {-1, -1, -1, -1};  // -1 means no color specified
+// Color indices: 0=plot_line, 1=axes, 2=text, 3=title, 4=max_error, 5=min_error
+static int colors[6] = {-1, -1, -1, -1, -1, -1};  // -1 means no color specified
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
@@ -107,12 +107,14 @@ static void usage(void) {
         "lower-limit of the plot scale is fixed\n"
         "  -t title of the plot\n"
         "  -u unit displayed beside vertical bar\n"
-        "  -C color[,axes,text,title]  set colors (0-7) for elements:\n"
+        "  -C color[,axes,text,title,max_err,min_err]  set colors (0-7) for elements:\n"
         "     First value: plot line color\n"
         "     Second value: axes color (optional)\n"
         "     Third value: text color (optional)\n"
         "     Fourth value: title color (optional)\n"
-        "     Example: -C 1,2,3,4 or -C 1,2 or -C 1\n"
+        "     Fifth value: max error indicator color (optional)\n"
+        "     Sixth value: min error indicator color (optional)\n"
+        "     Example: -C 1,2,3,4,5,6 or -C 1,2 or -C 1\n"
         "  -v print the current version and exit\n"
         "  -h print this help message and exit\n"
         "\n"
@@ -212,11 +214,37 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     c1r.attr |= A_REVERSE;
     c2r.attr |= A_REVERSE;
 
-    if (colors[0] != -1) {
+    // Apply appropriate colors based on character type
+    if (c1 == hce && colors[4] != -1) {
+        // Max error indicator
+        c1->attr |= COLOR_PAIR(5);
+        c1r.attr |= COLOR_PAIR(5);
+    } else if (c1 == lce && colors[5] != -1) {
+        // Min error indicator
+        c1->attr |= COLOR_PAIR(6);
+        c1r.attr |= COLOR_PAIR(6);
+    } else if (colors[0] != -1) {
+        // Normal plot line
         c1->attr |= COLOR_PAIR(1);
-        c2->attr |= COLOR_PAIR(1);
         c1r.attr |= COLOR_PAIR(1);
+    }
+
+    if (c2 == hce && colors[4] != -1) {
+        // Max error indicator
+        c2->attr |= COLOR_PAIR(5);
+        c2r.attr |= COLOR_PAIR(5);
+    } else if (c2 == lce && colors[5] != -1) {
+        // Min error indicator
+        c2->attr |= COLOR_PAIR(6);
+        c2r.attr |= COLOR_PAIR(6);
+    } else if (colors[0] != -1) {
+        // Normal plot line
+        c2->attr |= COLOR_PAIR(1);
         c2r.attr |= COLOR_PAIR(1);
+    }
+
+    // Space always uses plot line color
+    if (colors[0] != -1) {
         space.attr |= COLOR_PAIR(1);
     }
 
@@ -230,11 +258,13 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
     }
 
+    // Reset all color attributes
+    c1->attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
+    c2->attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
+    c1r.attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
+    c2r.attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
+    
     if (colors[0] != -1) {
-        c1->attr &= ~COLOR_PAIR(1);
-        c2->attr &= ~COLOR_PAIR(1);
-        c1r.attr &= ~COLOR_PAIR(1);
-        c2r.attr &= ~COLOR_PAIR(1);
         space.attr &= ~COLOR_PAIR(1);
     }
 }
@@ -709,7 +739,7 @@ int main(int argc, char *argv[]) {
                 char *token = strtok(color_str, ",");
                 int color_idx = 0;
 
-                while (token != NULL && color_idx < 4) {
+                while (token != NULL && color_idx < 6) {
                     colors[color_idx++] = atoi(token);
                     token = strtok(NULL, ",");
                 }
@@ -754,7 +784,7 @@ int main(int argc, char *argv[]) {
 
     // Check if any colors are defined
     bool has_colors = false;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 6; i++) {
         if (colors[i] != -1) {
             has_colors = true;
             break;
@@ -766,12 +796,14 @@ int main(int argc, char *argv[]) {
         use_default_colors();
 
         // Initialize color pairs for different elements
-        // COLOR_PAIR(1): plot line (initialized in original code)
+        // COLOR_PAIR(1): plot line
         // COLOR_PAIR(2): axes
         // COLOR_PAIR(3): text
         // COLOR_PAIR(4): title
+        // COLOR_PAIR(5): max error indicator
+        // COLOR_PAIR(6): min error indicator
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 6; i++) {
             if (colors[i] != -1) {
                 init_pair(i + 1, colors[i], -1);  // -1 for default background
             }
