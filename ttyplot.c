@@ -60,6 +60,27 @@
 #define T_LLCR ACS_LLCORNER
 #endif
 
+// Define standard curses color constants for better readability
+#define C_BLACK   0
+#define C_RED     1
+#define C_GREEN   2
+#define C_YELLOW  3
+#define C_BLUE    4
+#define C_MAGENTA 5
+#define C_CYAN    6
+#define C_WHITE   7
+
+// Define color element indices
+enum ColorElement {
+    LINE_COLOR = 0,
+    AXES_COLOR,
+    TEXT_COLOR,
+    TITLE_COLOR,
+    MAX_ERROR_COLOR,
+    MIN_ERROR_COLOR,
+    NUM_COLOR_ELEMENTS
+};
+
 enum Event {
     // These are made to have no set bits overlap to ease flag set testing
     EVENT_TIMEOUT = 1 << 0,
@@ -81,8 +102,8 @@ static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
 static bool fake_clock = false;
 static char *errstr = NULL;
 static bool redraw_needed = false;
-// Color indices: 0=plot_line, 1=axes, 2=text, 3=title, 4=max_error, 5=min_error
-static int colors[6] = {-1, -1, -1, -1, -1, -1};  // -1 means no color specified
+// Array of colors for different elements, -1 means no color specified
+static int colors[NUM_COLOR_ELEMENTS] = {-1, -1, -1, -1, -1, -1};
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
@@ -115,6 +136,11 @@ static void usage(void) {
         "     Fifth value: max error indicator color (optional)\n"
         "     Sixth value: min error indicator color (optional)\n"
         "     Example: -C 1,2,3,4,5,6 or -C 1,2 or -C 1\n"
+        "     Predefined color schemes:\n"
+        "       -C dark1    Blue-cyan-yellow scheme for dark terminals\n"
+        "       -C dark2    Purple-yellow-green scheme for dark terminals\n"
+        "       -C light1   Green-blue-red scheme for light terminals\n"
+        "       -C light2   Blue-green-yellow scheme for light terminals\n"
         "  -v print the current version and exit\n"
         "  -h print this help message and exit\n"
         "\n"
@@ -125,6 +151,43 @@ static void usage(void) {
 
 static void version(void) {
     printf("ttyplot %s\n", VERSION_STR);
+}
+
+// Set a predefined color scheme
+static void set_color_scheme(const char *scheme_name) {
+    if (strcmp(scheme_name, "dark1") == 0) {
+        // Blue-cyan-yellow scheme for dark terminals
+        colors[LINE_COLOR] = C_BLUE;      // Blue for plot line
+        colors[AXES_COLOR] = C_CYAN;      // Cyan for axes
+        colors[TEXT_COLOR] = C_WHITE;     // White for text
+        colors[TITLE_COLOR] = C_YELLOW;   // Yellow for title
+        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
+        colors[MIN_ERROR_COLOR] = C_GREEN; // Green for min error
+    } else if (strcmp(scheme_name, "dark2") == 0) {
+        // Purple-yellow-green scheme for dark terminals
+        colors[LINE_COLOR] = C_MAGENTA;   // Magenta for plot line
+        colors[AXES_COLOR] = C_YELLOW;    // Yellow for axes
+        colors[TEXT_COLOR] = C_CYAN;      // Cyan for text
+        colors[TITLE_COLOR] = C_GREEN;    // Green for title
+        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
+        colors[MIN_ERROR_COLOR] = C_BLUE; // Blue for min error
+    } else if (strcmp(scheme_name, "light1") == 0) {
+        // Green-blue-red scheme for light terminals
+        colors[LINE_COLOR] = C_GREEN;     // Green for plot line
+        colors[AXES_COLOR] = C_BLUE;      // Blue for axes
+        colors[TEXT_COLOR] = C_BLACK;     // Black for text
+        colors[TITLE_COLOR] = C_RED;      // Red for title
+        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
+        colors[MIN_ERROR_COLOR] = C_MAGENTA; // Magenta for min error
+    } else if (strcmp(scheme_name, "light2") == 0) {
+        // Blue-green-yellow scheme for light terminals
+        colors[LINE_COLOR] = C_BLUE;      // Blue for plot line
+        colors[AXES_COLOR] = C_GREEN;     // Green for axes
+        colors[TEXT_COLOR] = C_BLACK;     // Black for text
+        colors[TITLE_COLOR] = C_YELLOW;   // Yellow for title
+        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
+        colors[MIN_ERROR_COLOR] = C_MAGENTA; // Magenta for min error
+    }
 }
 
 // Replace *v1 and *v2 (if non-NULL) by their time derivatives.
@@ -178,8 +241,8 @@ static void getminmax(int pw, double *values, double *min, double *max, double *
 
 static void draw_axes(int h, int ph, int pw, double max, double min, char *unit) {
     // Apply axes color if specified
-    if (colors[1] != -1)
-        attron(COLOR_PAIR(2));
+    if (colors[AXES_COLOR] != -1)
+        attron(COLOR_PAIR(AXES_COLOR + 1));
 
     // Draw axes
     mvhline(h - 3, 2, T_HLINE, pw);
@@ -188,12 +251,12 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
     mvaddch(1, 2, T_UARR);
     mvaddch(h - 3, 2, T_LLCR);
 
-    if (colors[1] != -1)
-        attroff(COLOR_PAIR(2));
+    if (colors[AXES_COLOR] != -1)
+        attroff(COLOR_PAIR(AXES_COLOR + 1));
 
     // Apply text color for scale labels if specified
-    if (colors[2] != -1)
-        attron(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attron(COLOR_PAIR(TEXT_COLOR + 1));
 
     // Print scale labels
     if (max - min >= 0.1) {
@@ -203,8 +266,8 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
         mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", min * 3 / 4 + max / 4, unit);
     }
 
-    if (colors[2] != -1)
-        attroff(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attroff(COLOR_PAIR(TEXT_COLOR + 1));
 }
 
 static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
@@ -215,37 +278,37 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     c2r.attr |= A_REVERSE;
 
     // Apply appropriate colors based on character type
-    if (c1 == hce && colors[4] != -1) {
+    if (c1 == hce && colors[MAX_ERROR_COLOR] != -1) {
         // Max error indicator
-        c1->attr |= COLOR_PAIR(5);
-        c1r.attr |= COLOR_PAIR(5);
-    } else if (c1 == lce && colors[5] != -1) {
+        c1->attr |= COLOR_PAIR(MAX_ERROR_COLOR + 1);
+        c1r.attr |= COLOR_PAIR(MAX_ERROR_COLOR + 1);
+    } else if (c1 == lce && colors[MIN_ERROR_COLOR] != -1) {
         // Min error indicator
-        c1->attr |= COLOR_PAIR(6);
-        c1r.attr |= COLOR_PAIR(6);
-    } else if (colors[0] != -1) {
+        c1->attr |= COLOR_PAIR(MIN_ERROR_COLOR + 1);
+        c1r.attr |= COLOR_PAIR(MIN_ERROR_COLOR + 1);
+    } else if (colors[LINE_COLOR] != -1) {
         // Normal plot line
-        c1->attr |= COLOR_PAIR(1);
-        c1r.attr |= COLOR_PAIR(1);
+        c1->attr |= COLOR_PAIR(LINE_COLOR + 1);
+        c1r.attr |= COLOR_PAIR(LINE_COLOR + 1);
     }
 
-    if (c2 == hce && colors[4] != -1) {
+    if (c2 == hce && colors[MAX_ERROR_COLOR] != -1) {
         // Max error indicator
-        c2->attr |= COLOR_PAIR(5);
-        c2r.attr |= COLOR_PAIR(5);
-    } else if (c2 == lce && colors[5] != -1) {
+        c2->attr |= COLOR_PAIR(MAX_ERROR_COLOR + 1);
+        c2r.attr |= COLOR_PAIR(MAX_ERROR_COLOR + 1);
+    } else if (c2 == lce && colors[MIN_ERROR_COLOR] != -1) {
         // Min error indicator
-        c2->attr |= COLOR_PAIR(6);
-        c2r.attr |= COLOR_PAIR(6);
-    } else if (colors[0] != -1) {
+        c2->attr |= COLOR_PAIR(MIN_ERROR_COLOR + 1);
+        c2r.attr |= COLOR_PAIR(MIN_ERROR_COLOR + 1);
+    } else if (colors[LINE_COLOR] != -1) {
         // Normal plot line
-        c2->attr |= COLOR_PAIR(1);
-        c2r.attr |= COLOR_PAIR(1);
+        c2->attr |= COLOR_PAIR(LINE_COLOR + 1);
+        c2r.attr |= COLOR_PAIR(LINE_COLOR + 1);
     }
 
     // Space always uses plot line color
-    if (colors[0] != -1) {
-        space.attr |= COLOR_PAIR(1);
+    if (colors[LINE_COLOR] != -1) {
+        space.attr |= COLOR_PAIR(LINE_COLOR + 1);
     }
 
     if (l1 > l2) {
@@ -258,14 +321,18 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
     }
 
-    // Reset all color attributes
-    c1->attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
-    c2->attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
-    c1r.attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
-    c2r.attr &= ~(COLOR_PAIR(1) | COLOR_PAIR(5) | COLOR_PAIR(6));
+    // Reset all color attributes (COLOR_PAIR indexes are LINE_COLOR+1 through MIN_ERROR_COLOR+1)
+    const attr_t color_mask = COLOR_PAIR(LINE_COLOR + 1) | 
+                              COLOR_PAIR(MAX_ERROR_COLOR + 1) |
+                              COLOR_PAIR(MIN_ERROR_COLOR + 1);
     
-    if (colors[0] != -1) {
-        space.attr &= ~COLOR_PAIR(1);
+    c1->attr &= ~color_mask;
+    c2->attr &= ~color_mask;
+    c1r.attr &= ~color_mask;
+    c2r.attr &= ~color_mask;
+    
+    if (colors[LINE_COLOR] != -1) {
+        space.attr &= ~COLOR_PAIR(LINE_COLOR + 1);
     }
 }
 
@@ -277,8 +344,8 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
     int x;
     int l1, l2;
 
-    if (colors[0] != -1)
-        attron(COLOR_PAIR(1));
+    if (colors[LINE_COLOR] != -1)
+        attron(COLOR_PAIR(LINE_COLOR + 1));
 
     for (x = first_col; x < first_col + pw; x++, i = (i + 1) % pw) {
         /* suppress drawing uninitialized entries */
@@ -311,8 +378,8 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                   hce, lce);
     }
 
-    if (colors[0] != -1)
-        attroff(COLOR_PAIR(1));
+    if (colors[LINE_COLOR] != -1)
+        attroff(COLOR_PAIR(LINE_COLOR + 1));
 }
 
 static void show_all_centered(const char *message) {
@@ -321,13 +388,13 @@ static void show_all_centered(const char *message) {
     const int y = height / 2;
 
     // Apply title color to error messages if specified
-    if (colors[3] != -1)
-        attron(COLOR_PAIR(4));
+    if (colors[TITLE_COLOR] != -1)
+        attron(COLOR_PAIR(TITLE_COLOR + 1));
 
     mvaddnstr(y, x, message, width);
 
-    if (colors[3] != -1)
-        attroff(COLOR_PAIR(4));
+    if (colors[TITLE_COLOR] != -1)
+        attroff(COLOR_PAIR(TITLE_COLOR + 1));
 }
 
 static int window_big_enough_to_draw(void) {
@@ -367,8 +434,8 @@ static void paint_plot(void) {
         min = hardmin;
 
     // Apply text color if specified
-    if (colors[2] != -1)
-        attron(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attron(COLOR_PAIR(TEXT_COLOR + 1));
 
     mvaddstr(height - 1, width - strlen(verstring) - 1, verstring);
 
@@ -382,12 +449,12 @@ static void paint_plot(void) {
     }
     mvaddstr(height - 2, width - strlen(clock_display), clock_display);
 
-    if (colors[2] != -1)
-        attroff(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attroff(COLOR_PAIR(TEXT_COLOR + 1));
 
     // Apply text color for stats
-    if (colors[2] != -1)
-        attron(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attron(COLOR_PAIR(TEXT_COLOR + 1));
 
     mvvline_set(height - 2, 5, &plotchar, 1);
     if (v > 0) {
@@ -404,8 +471,8 @@ static void paint_plot(void) {
         }
     }
 
-    if (colors[2] != -1)
-        attroff(COLOR_PAIR(3));
+    if (colors[TEXT_COLOR] != -1)
+        attroff(COLOR_PAIR(TEXT_COLOR + 1));
 
     plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
                 &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
@@ -413,13 +480,13 @@ static void paint_plot(void) {
     draw_axes(height, plotheight, plotwidth, max, min, unit);
 
     // Apply title color if specified
-    if (colors[3] != -1)
-        attron(COLOR_PAIR(4));
+    if (colors[TITLE_COLOR] != -1)
+        attron(COLOR_PAIR(TITLE_COLOR + 1));
 
     mvaddstr(0, (width / 2) - (strlen(title) / 2), title);
 
-    if (colors[3] != -1)
-        attroff(COLOR_PAIR(4));
+    if (colors[TITLE_COLOR] != -1)
+        attroff(COLOR_PAIR(TITLE_COLOR + 1));
 
     move(0, 0);
 }
@@ -735,16 +802,25 @@ int main(int argc, char *argv[]) {
                 mbtowc(&min_errchar.chars[0], optarg, MB_CUR_MAX);
                 break;
             case 'C': {
-                char *color_str = strdup(optarg);
-                char *token = strtok(color_str, ",");
-                int color_idx = 0;
+                // Check if it's a predefined color scheme
+                if (strcmp(optarg, "dark1") == 0 || 
+                    strcmp(optarg, "dark2") == 0 || 
+                    strcmp(optarg, "light1") == 0 || 
+                    strcmp(optarg, "light2") == 0) {
+                    set_color_scheme(optarg);
+                } else {
+                    // Process comma-separated color values
+                    char *color_str = strdup(optarg);
+                    char *token = strtok(color_str, ",");
+                    int color_idx = 0;
 
-                while (token != NULL && color_idx < 6) {
-                    colors[color_idx++] = atoi(token);
-                    token = strtok(NULL, ",");
+                    while (token != NULL && color_idx < NUM_COLOR_ELEMENTS) {
+                        colors[color_idx++] = atoi(token);
+                        token = strtok(NULL, ",");
+                    }
+
+                    free(color_str);
                 }
-
-                free(color_str);
                 break;
             }
             case 's':
@@ -784,7 +860,7 @@ int main(int argc, char *argv[]) {
 
     // Check if any colors are defined
     bool has_colors = false;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < NUM_COLOR_ELEMENTS; i++) {
         if (colors[i] != -1) {
             has_colors = true;
             break;
@@ -796,14 +872,15 @@ int main(int argc, char *argv[]) {
         use_default_colors();
 
         // Initialize color pairs for different elements
-        // COLOR_PAIR(1): plot line
-        // COLOR_PAIR(2): axes
-        // COLOR_PAIR(3): text
-        // COLOR_PAIR(4): title
-        // COLOR_PAIR(5): max error indicator
-        // COLOR_PAIR(6): min error indicator
+        // COLOR_PAIR indexes match the enum + 1 because ncurses starts at 1
+        // COLOR_PAIR(1): plot line (LINE_COLOR + 1)
+        // COLOR_PAIR(2): axes (AXES_COLOR + 1)
+        // COLOR_PAIR(3): text (TEXT_COLOR + 1)
+        // COLOR_PAIR(4): title (TITLE_COLOR + 1)
+        // COLOR_PAIR(5): max error indicator (MAX_ERROR_COLOR + 1)
+        // COLOR_PAIR(6): min error indicator (MIN_ERROR_COLOR + 1)
 
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < NUM_COLOR_ELEMENTS; i++) {
             if (colors[i] != -1) {
                 init_pair(i + 1, colors[i], -1);  // -1 for default background
             }
