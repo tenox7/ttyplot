@@ -22,12 +22,13 @@ fi
 
 ./record.sh
 
-cp actual.txt expected.txt
+eval `grep ^VERSION ../Makefile | tr -d ' '`  # get the version number
+sed "s/$VERSION/@VERSION@/" actual.txt > template.txt
 
-git add expected.txt
+git add template.txt
 
 if git diff --cached --exit-code >/dev/null ; then
     echo 'Already in sync, good.'
 else
-    EDITOR=true git commit -m 'recordings: Sync expected.txt'
+    EDITOR=true git commit -m 'recordings: Sync template.txt'
 fi
