@@ -61,14 +61,14 @@
 #endif
 
 // Define standard curses color constants for better readability
-#define C_BLACK   0
-#define C_RED     1
-#define C_GREEN   2
-#define C_YELLOW  3
-#define C_BLUE    4
+#define C_BLACK 0
+#define C_RED 1
+#define C_GREEN 2
+#define C_YELLOW 3
+#define C_BLUE 4
 #define C_MAGENTA 5
-#define C_CYAN    6
-#define C_WHITE   7
+#define C_CYAN 6
+#define C_WHITE 7
 
 // Define color element indices
 enum ColorElement {
@@ -157,36 +157,36 @@ static void version(void) {
 static void set_color_scheme(const char *scheme_name) {
     if (strcmp(scheme_name, "dark1") == 0) {
         // Blue-cyan-yellow scheme for dark terminals
-        colors[LINE_COLOR] = C_BLUE;      // Blue for plot line
-        colors[AXES_COLOR] = C_CYAN;      // Cyan for axes
-        colors[TEXT_COLOR] = C_WHITE;     // White for text
-        colors[TITLE_COLOR] = C_YELLOW;   // Yellow for title
-        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
-        colors[MIN_ERROR_COLOR] = C_GREEN; // Green for min error
+        colors[LINE_COLOR] = C_BLUE;        // Blue for plot line
+        colors[AXES_COLOR] = C_CYAN;        // Cyan for axes
+        colors[TEXT_COLOR] = C_WHITE;       // White for text
+        colors[TITLE_COLOR] = C_YELLOW;     // Yellow for title
+        colors[MAX_ERROR_COLOR] = C_RED;    // Red for max error
+        colors[MIN_ERROR_COLOR] = C_GREEN;  // Green for min error
     } else if (strcmp(scheme_name, "dark2") == 0) {
         // Purple-yellow-green scheme for dark terminals
-        colors[LINE_COLOR] = C_MAGENTA;   // Magenta for plot line
-        colors[AXES_COLOR] = C_YELLOW;    // Yellow for axes
-        colors[TEXT_COLOR] = C_CYAN;      // Cyan for text
-        colors[TITLE_COLOR] = C_GREEN;    // Green for title
-        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
-        colors[MIN_ERROR_COLOR] = C_BLUE; // Blue for min error
+        colors[LINE_COLOR] = C_MAGENTA;    // Magenta for plot line
+        colors[AXES_COLOR] = C_YELLOW;     // Yellow for axes
+        colors[TEXT_COLOR] = C_CYAN;       // Cyan for text
+        colors[TITLE_COLOR] = C_GREEN;     // Green for title
+        colors[MAX_ERROR_COLOR] = C_RED;   // Red for max error
+        colors[MIN_ERROR_COLOR] = C_BLUE;  // Blue for min error
     } else if (strcmp(scheme_name, "light1") == 0) {
         // Green-blue-red scheme for light terminals
-        colors[LINE_COLOR] = C_GREEN;     // Green for plot line
-        colors[AXES_COLOR] = C_BLUE;      // Blue for axes
-        colors[TEXT_COLOR] = C_BLACK;     // Black for text
-        colors[TITLE_COLOR] = C_RED;      // Red for title
-        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
-        colors[MIN_ERROR_COLOR] = C_MAGENTA; // Magenta for min error
+        colors[LINE_COLOR] = C_GREEN;         // Green for plot line
+        colors[AXES_COLOR] = C_BLUE;          // Blue for axes
+        colors[TEXT_COLOR] = C_BLACK;         // Black for text
+        colors[TITLE_COLOR] = C_RED;          // Red for title
+        colors[MAX_ERROR_COLOR] = C_RED;      // Red for max error
+        colors[MIN_ERROR_COLOR] = C_MAGENTA;  // Magenta for min error
     } else if (strcmp(scheme_name, "light2") == 0) {
         // Blue-green-yellow scheme for light terminals
-        colors[LINE_COLOR] = C_BLUE;      // Blue for plot line
-        colors[AXES_COLOR] = C_GREEN;     // Green for axes
-        colors[TEXT_COLOR] = C_BLACK;     // Black for text
-        colors[TITLE_COLOR] = C_YELLOW;   // Yellow for title
-        colors[MAX_ERROR_COLOR] = C_RED;  // Red for max error
-        colors[MIN_ERROR_COLOR] = C_MAGENTA; // Magenta for min error
+        colors[LINE_COLOR] = C_BLUE;          // Blue for plot line
+        colors[AXES_COLOR] = C_GREEN;         // Green for axes
+        colors[TEXT_COLOR] = C_BLACK;         // Black for text
+        colors[TITLE_COLOR] = C_YELLOW;       // Yellow for title
+        colors[MAX_ERROR_COLOR] = C_RED;      // Red for max error
+        colors[MIN_ERROR_COLOR] = C_MAGENTA;  // Magenta for min error
     }
 }
 
@@ -321,16 +321,17 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         mvvline_set(ph + 1 - l2, x, &c2r, l2);
     }
 
-    // Reset all color attributes (COLOR_PAIR indexes are LINE_COLOR+1 through MIN_ERROR_COLOR+1)
-    const attr_t color_mask = COLOR_PAIR(LINE_COLOR + 1) | 
+    // Reset all color attributes (COLOR_PAIR indexes are LINE_COLOR+1 through
+    // MIN_ERROR_COLOR+1)
+    const attr_t color_mask = COLOR_PAIR(LINE_COLOR + 1) |
                               COLOR_PAIR(MAX_ERROR_COLOR + 1) |
                               COLOR_PAIR(MIN_ERROR_COLOR + 1);
-    
+
     c1->attr &= ~color_mask;
     c2->attr &= ~color_mask;
     c1r.attr &= ~color_mask;
     c2r.attr &= ~color_mask;
-    
+
     if (colors[LINE_COLOR] != -1) {
         space.attr &= ~COLOR_PAIR(LINE_COLOR + 1);
     }
@@ -803,10 +804,8 @@ int main(int argc, char *argv[]) {
                 break;
             case 'C': {
                 // Check if it's a predefined color scheme
-                if (strcmp(optarg, "dark1") == 0 || 
-                    strcmp(optarg, "dark2") == 0 || 
-                    strcmp(optarg, "light1") == 0 || 
-                    strcmp(optarg, "light2") == 0) {
+                if (strcmp(optarg, "dark1") == 0 || strcmp(optarg, "dark2") == 0 ||
+                    strcmp(optarg, "light1") == 0 || strcmp(optarg, "light2") == 0) {
                     set_color_scheme(optarg);
                 } else {
                     // Process comma-separated color values
