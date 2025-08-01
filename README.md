@@ -235,12 +235,19 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
   -M minimum value, if entered less than this, draws error symbol (see -E), lower-limit of the plot scale is fixed
   -t title of the plot
   -u unit displayed beside vertical bar
-  -C color[,axes,text,title]  set colors (0-7) for elements:
+  -C color[,axes,text,title,max_err,min_err]  set colors (0-7) for elements:
      First value: plot line color
      Second value: axes color (optional)
      Third value: text color (optional)
      Fourth value: title color (optional)
-     Example: -C 1,2,3,4 or -C 1,2 or -C 1
+     Fifth value: max error indicator color (optional)
+     Sixth value: min error indicator color (optional)
+     Example: -C 1,2,3,4,5,6 or -C 1,2 or -C 1
+     Predefined color schemes:
+       -C dark1    Blue-cyan-yellow scheme for dark terminals
+       -C dark2    Purple-yellow-green scheme for dark terminals
+       -C light1   Green-blue-red scheme for light terminals
+       -C light2   Blue-green-yellow scheme for light terminals
      Colors: 0=black, 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
   -v print the current version and exit
   -h print this help message and exit
