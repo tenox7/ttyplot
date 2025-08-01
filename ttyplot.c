@@ -245,6 +245,7 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
     mvaddch(1, 2, T_UARR);
     mvaddch(h - 3, 2, T_LLCR);
 
+
     if (colors[AXES_COLOR] != -1)
         attroff(COLOR_PAIR(AXES_COLOR + 1));
 
@@ -255,9 +256,20 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
     // Print scale labels
     if (max - min >= 0.1) {
         mvprintw(1, 4, "%.1f %s", max, unit);
-        mvprintw((ph / 4) + 1, 4, "%.1f %s", min / 4 + max * 3 / 4, unit);
-        mvprintw((ph / 2) + 1, 4, "%.1f %s", min / 2 + max / 2, unit);
-        mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", min * 3 / 4 + max / 4, unit);
+        
+        double label_val;
+        
+        label_val = min / 4 + max * 3 / 4;
+        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        mvprintw((ph / 4) + 1, 4, "%.1f %s", label_val, unit);
+        
+        label_val = min / 2 + max / 2;
+        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        mvprintw((ph / 2) + 1, 4, "%.1f %s", label_val, unit);
+        
+        label_val = min * 3 / 4 + max / 4;
+        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", label_val, unit);
     }
 
     if (colors[TEXT_COLOR] != -1)
@@ -265,7 +277,7 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
 }
 
 static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
-                      cchar_t *hce, cchar_t *lce) {
+                      cchar_t *hce, cchar_t *lce, int zero_pos, double v1, double v2) {
     static cchar_t space = {.attr = A_REVERSE, .chars = {' ', '\0'}};
     cchar_t c1r = *c1, c2r = *c2;
     c1r.attr |= A_REVERSE;
@@ -305,14 +317,48 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         space.attr |= COLOR_PAIR(LINE_COLOR + 1);
     }
 
-    if (l1 > l2) {
-        mvvline_set(ph + 1 - l1, x, c1, l1 - l2);
-        mvvline_set(ph + 1 - l2, x, &c2r, l2);
-    } else if (l1 < l2) {
-        mvvline_set(ph + 1 - l2, x, (c2 == hce || c2 == lce) ? &c2r : &space, l2 - l1);
-        mvvline_set(ph + 1 - l1, x, &c2r, l1);
+    // Handle drawing based on whether values are positive or negative
+    if (zero_pos > 0) {  // We have negative values
+        int y1_start, y1_end, y2_start, y2_end;
+        
+        // For value 1
+        if (v1 >= 0) {
+            // Positive value: draw from zero line upward
+            y1_start = ph + 1 - l1;
+            y1_end = ph + 1 - zero_pos;
+        } else {
+            // Negative value: draw from zero line downward
+            y1_start = ph + 1 - zero_pos;
+            y1_end = ph + 1 - l1;
+        }
+        
+        // For value 2
+        if (v2 >= 0) {
+            y2_start = ph + 1 - l2;
+            y2_end = ph + 1 - zero_pos;
+        } else {
+            y2_start = ph + 1 - zero_pos;
+            y2_end = ph + 1 - l2;
+        }
+        
+        // Draw the lines
+        if (y1_start < y1_end) {
+            mvvline_set(y1_start, x, c1, y1_end - y1_start);
+        }
+        if (y2_start < y2_end && l2 > 0) {
+            mvvline_set(y2_start, x, &c2r, y2_end - y2_start);
+        }
     } else {
-        mvvline_set(ph + 1 - l2, x, &c2r, l2);
+        // Original behavior for all positive values
+        if (l1 > l2) {
+            mvvline_set(ph + 1 - l1, x, c1, l1 - l2);
+            mvvline_set(ph + 1 - l2, x, &c2r, l2);
+        } else if (l1 < l2) {
+            mvvline_set(ph + 1 - l2, x, (c2 == hce || c2 == lce) ? &c2r : &space, l2 - l1);
+            mvvline_set(ph + 1 - l1, x, &c2r, l1);
+        } else {
+            mvvline_set(ph + 1 - l2, x, &c2r, l2);
+        }
     }
 
     // Reset all color attributes (COLOR_PAIR indexes are LINE_COLOR+1 through
@@ -338,6 +384,14 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
     int i = (n + 1) % pw;
     int x;
     int l1, l2;
+    int zero_pos = 0;
+
+    // Calculate zero position if we have negative values
+    if (min < 0 && max > 0) {
+        zero_pos = lrint((0 - min) / (max - min) * ph);
+    } else if (max <= 0) {
+        zero_pos = ph;  // All values are negative, zero is at top
+    }
 
     if (colors[LINE_COLOR] != -1)
         attron(COLOR_PAIR(LINE_COLOR + 1));
@@ -370,7 +424,7 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                   (v2 && v2[i] > hardmax)   ? hce
                   : (v2 && v2[i] < hardmin) ? lce
                                             : pc,
-                  hce, lce);
+                  hce, lce, zero_pos, v1[i], v2 ? v2[i] : 0);
     }
 
     if (colors[LINE_COLOR] != -1)
