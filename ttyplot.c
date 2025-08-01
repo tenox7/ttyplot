@@ -146,7 +146,8 @@ static void usage(void) {
         "\n"
         "Hotkeys:\n"
         "   q quit\n"
-        "   r toggle rate mode\n");
+        "   r toggle rate mode\n"
+        "  ^L full screen refresh\n");
 }
 
 static void version(void) {
@@ -955,6 +956,10 @@ int main(int argc, char *argv[]) {
                     rate = ! rate;
                 else if (key == 'q')  // 'q' = quit
                     break;
+                else if (key == '\f' || key == 12) {  // Ctrl+L = full screen refresh
+                    clear();
+                    redraw_needed = true;
+                }
             } else if (count == 0) {
                 close(tty);
                 tty = -1;

@@ -258,6 +258,7 @@ when reading data from a pipe, ttyplot accepts the following commands typed at t
 ```
   q  quit
   r  toggle rate mode
+ ^L  full screen redraw
 ```
 
 these commands do not work if the standard input is a terminal: in this case quit with <kbd>Ctrl</kbd>-<kbd>C</kbd>.
