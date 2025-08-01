@@ -1,4 +1,4 @@
-# ttyplot
+# ttyplo
 a realtime plotting utility for text mode consoles and terminals with data input from stdin / pipe
 
 takes data from standard input / unix pipeline, most commonly some tool like *ping, snmpget, netstat, ip link, ifconfig, sar, vmstat*, etc. and plots in text mode on a terminal in real time, for example a simple **ping**:
@@ -66,6 +66,8 @@ pkg install ttyplot
 for other platforms see [releases tab](https://github.com/tenox7/ttyplot/releases), also [older versions](https://github.com/tenox7/ttyplot/releases/tag/1.4)
 
 ## examples
+
+note: the examples provided are not meant to be exhaustive or even fully working in every case, just some ideas to expand on
 
 ### cpu usage from vmstat using awk to pick the right column
 
