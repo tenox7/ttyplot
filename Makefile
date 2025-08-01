@@ -1,6 +1,8 @@
+VERSION    = 1.7.2
 DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
+CPPFLAGS += -DVERSION_STR='"$(VERSION)"'
 CFLAGS += -Wall -Wextra
 CFLAGS += `pkg-config --cflags ncursesw`
 LDLIBS += `pkg-config --libs ncursesw` -lm
@@ -22,6 +24,6 @@ clean:
 
 .c:
 	@pkg-config --version > /dev/null
-	$(CC) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
 .PHONY: all clean install uninstall
