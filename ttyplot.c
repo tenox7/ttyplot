@@ -245,7 +245,6 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
     mvaddch(1, 2, T_UARR);
     mvaddch(h - 3, 2, T_LLCR);
 
-
     if (colors[AXES_COLOR] != -1)
         attroff(COLOR_PAIR(AXES_COLOR + 1));
 
@@ -256,19 +255,22 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
     // Print scale labels
     if (max - min >= 0.1) {
         mvprintw(1, 4, "%.1f %s", max, unit);
-        
+
         double label_val;
-        
+
         label_val = min / 4 + max * 3 / 4;
-        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        if (fabs(label_val) < 0.01)
+            label_val = 0.0;  // Prevent -0.0
         mvprintw((ph / 4) + 1, 4, "%.1f %s", label_val, unit);
-        
+
         label_val = min / 2 + max / 2;
-        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        if (fabs(label_val) < 0.01)
+            label_val = 0.0;  // Prevent -0.0
         mvprintw((ph / 2) + 1, 4, "%.1f %s", label_val, unit);
-        
+
         label_val = min * 3 / 4 + max / 4;
-        if (fabs(label_val) < 0.01) label_val = 0.0;  // Prevent -0.0
+        if (fabs(label_val) < 0.01)
+            label_val = 0.0;  // Prevent -0.0
         mvprintw((ph * 3 / 4) + 1, 4, "%.1f %s", label_val, unit);
     }
 
@@ -320,7 +322,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     // Handle drawing based on whether values are positive or negative
     if (zero_pos > 0) {  // We have negative values
         int y1_start, y1_end, y2_start, y2_end;
-        
+
         // For value 1
         if (v1 >= 0) {
             // Positive value: draw from zero line upward
@@ -331,7 +333,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
             y1_start = ph + 1 - zero_pos;
             y1_end = ph + 1 - l1;
         }
-        
+
         // For value 2
         if (v2 >= 0) {
             y2_start = ph + 1 - l2;
@@ -340,7 +342,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
             y2_start = ph + 1 - zero_pos;
             y2_end = ph + 1 - l2;
         }
-        
+
         // Draw the lines
         if (y1_start < y1_end) {
             mvvline_set(y1_start, x, c1, y1_end - y1_start);
@@ -354,7 +356,8 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
             mvvline_set(ph + 1 - l1, x, c1, l1 - l2);
             mvvline_set(ph + 1 - l2, x, &c2r, l2);
         } else if (l1 < l2) {
-            mvvline_set(ph + 1 - l2, x, (c2 == hce || c2 == lce) ? &c2r : &space, l2 - l1);
+            mvvline_set(ph + 1 - l2, x, (c2 == hce || c2 == lce) ? &c2r : &space,
+                        l2 - l1);
             mvvline_set(ph + 1 - l1, x, &c2r, l1);
         } else {
             mvvline_set(ph + 1 - l2, x, &c2r, l2);
