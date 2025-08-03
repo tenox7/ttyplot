@@ -1,4 +1,4 @@
-VERSION    = 1.7.2
+VERSION    = 1.7.3
 DESTDIR   ?=
 PREFIX    ?= /usr/local
 MANPREFIX ?= $(PREFIX)/man
