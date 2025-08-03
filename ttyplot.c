@@ -547,9 +547,11 @@ static void signal_handler(int signum) {
     const unsigned char signal_number =
         (unsigned char)signum;  // signum is either 2 (SIGINT) or 28 (SIGWINCH)
     ssize_t write_res;
+    int saved_errno = errno;
     do {
         write_res = write(signal_write_fd, &signal_number, 1);
     } while ((write_res == -1) && (errno == EINTR));
+    errno = saved_errno;
 }
 
 static void redraw_screen(const char *errstr) {
@@ -898,7 +900,10 @@ int main(int argc, char *argv[]) {
     if (hardmax <= hardmin)
         hardmax = FLT_MAX;
 
-    initscr(); /* uses filesystem, so before pledge */
+    if (initscr() == NULL) {
+        fprintf(stderr, "Error: failed to initialize ncurses\n");
+        exit(1);
+    }
 
 #ifdef __OpenBSD__
     if (pledge("stdio tty", NULL) == -1)
