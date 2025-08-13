@@ -1,4 +1,4 @@
-# ttyplo
+# ttyplot
 a realtime plotting utility for text mode consoles and terminals with data input from stdin / pipe
 
 takes data from standard input / unix pipeline, most commonly some tool like *ping, snmpget, netstat, ip link, ifconfig, sar, vmstat*, etc. and plots in text mode on a terminal in real time, for example a simple **ping**:
