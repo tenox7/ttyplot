@@ -279,7 +279,8 @@ static void draw_axes(int h, int ph, int pw, double max, double min, char *unit)
 }
 
 static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
-                      cchar_t *hce, cchar_t *lce, int zero_pos, double v1, double v2) {
+                      cchar_t *hce, cchar_t *lce, int zero_pos, double v1, double v2,
+                      int has_v2) {
     static cchar_t space = {.attr = A_REVERSE, .chars = {' ', '\0'}};
     cchar_t c1r = *c1, c2r = *c2;
     c1r.attr |= A_REVERSE;
@@ -335,20 +336,33 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
         }
 
         // For value 2
-        if (v2 >= 0) {
-            y2_start = ph + 1 - l2;
-            y2_end = ph + 1 - zero_pos;
-        } else {
-            y2_start = ph + 1 - zero_pos;
-            y2_end = ph + 1 - l2;
+        if (has_v2) {
+            if (v2 > 0) {
+                y2_start = ph + 1 - l2;
+                y2_end = ph + 1 - zero_pos;
+            } else if (v2 < 0) {
+                y2_start = ph + 1 - zero_pos;
+                y2_end = ph + 1 - l2;
+            } else {  // v2 == 0
+                y2_start = ph + 1 - zero_pos;
+                y2_end = ph + 1 - zero_pos;
+            }
         }
 
         // Draw the lines
         if (y1_start < y1_end) {
             mvvline_set(y1_start, x, c1, y1_end - y1_start);
+        } else if (y1_start > y1_end && l1 > 0) {
+            mvvline_set(y1_end, x, c1, y1_start - y1_end);
         }
-        if (y2_start < y2_end && l2 > 0) {
-            mvvline_set(y2_start, x, &c2r, y2_end - y2_start);
+        if (has_v2) {
+            if (y2_start < y2_end) {
+                mvvline_set(y2_start, x, &c2r, y2_end - y2_start);
+            } else if (y2_start > y2_end) {
+                mvvline_set(y2_end, x, &c2r, y2_start - y2_end);
+            } else {  // y2_start == y2_end
+                mvvline_set(y2_start, x, &c2r, 1);
+            }
         }
     } else {
         // Original behavior for all positive values
@@ -427,7 +441,8 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                   (v2 && v2[i] > hardmax)   ? hce
                   : (v2 && v2[i] < hardmin) ? lce
                                             : pc,
-                  hce, lce, zero_pos, v1[i], v2 ? v2[i] : 0);
+                  hce, lce, zero_pos, v1[i], (v2 && !isnan(v2[i])) ? v2[i] : 0,
+                  (v2 && !isnan(v2[i])));
     }
 
     if (colors[LINE_COLOR] != -1)
