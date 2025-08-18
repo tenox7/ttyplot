@@ -441,8 +441,8 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
                   (v2 && v2[i] > hardmax)   ? hce
                   : (v2 && v2[i] < hardmin) ? lce
                                             : pc,
-                  hce, lce, zero_pos, v1[i], (v2 && !isnan(v2[i])) ? v2[i] : 0,
-                  (v2 && !isnan(v2[i])));
+                  hce, lce, zero_pos, v1[i], (v2 && ! isnan(v2[i])) ? v2[i] : 0,
+                  (v2 && ! isnan(v2[i])));
     }
 
     if (colors[LINE_COLOR] != -1)
