@@ -147,11 +147,8 @@ jobs:
           # would error out saying "ld: unknown option: --as-needed"
           if [[ ${{ runner.os }} = macOS ]]; then
             as_needed=
-            # GCC on macOS needs this flag to suppress false positive uninitialized warnings
-            maybe_uninit_flag='-Wno-error=maybe-uninitialized'
           else
             as_needed='-Wl,--as-needed'
-            maybe_uninit_flag=
           fi
 
           # musl-gcc and gcc/macOS do not seem to support linking with sanitizers
@@ -165,7 +162,7 @@ jobs:
 
           ${MAKE} --version 2>/dev/null || true
 
-          CFLAGS="-std=c99 -pedantic -Werror ${maybe_uninit_flag} ${sanitizer} -O1" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
+          CFLAGS="-std=c99 -pedantic -Werror ${sanitizer} -O1" LDFLAGS="${as_needed} ${sanitizer}" ${MAKE}
 
       - name: 'Install'
         env:
