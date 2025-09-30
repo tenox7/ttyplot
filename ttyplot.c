@@ -322,7 +322,7 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
 
     // Handle drawing based on whether values are positive or negative
     if (zero_pos > 0) {  // We have negative values
-        int y1_start, y1_end, y2_start, y2_end;
+        int y1_start, y1_end;
 
         // For value 1
         if (v1 >= 0) {
@@ -335,8 +335,17 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
             y1_end = ph + 1 - l1;
         }
 
+        // Draw the lines
+        if (y1_start < y1_end) {
+            mvvline_set(y1_start, x, c1, y1_end - y1_start);
+        } else if (y1_start > y1_end && l1 > 0) {
+            mvvline_set(y1_end, x, c1, y1_start - y1_end);
+        }
+
         // For value 2
         if (has_v2) {
+            int y2_start, y2_end;
+
             if (v2 > 0) {
                 y2_start = ph + 1 - l2;
                 y2_end = ph + 1 - zero_pos;
@@ -347,15 +356,8 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
                 y2_start = ph + 1 - zero_pos;
                 y2_end = ph + 1 - zero_pos;
             }
-        }
 
-        // Draw the lines
-        if (y1_start < y1_end) {
-            mvvline_set(y1_start, x, c1, y1_end - y1_start);
-        } else if (y1_start > y1_end && l1 > 0) {
-            mvvline_set(y1_end, x, c1, y1_start - y1_end);
-        }
-        if (has_v2) {
+            // Draw the lines
             if (y2_start < y2_end) {
                 mvvline_set(y2_start, x, &c2r, y2_end - y2_start);
             } else if (y2_start > y2_end) {
