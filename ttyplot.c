@@ -323,47 +323,65 @@ static void draw_line(int x, int ph, int l1, int l2, cchar_t *c1, cchar_t *c2,
     // Handle drawing based on whether values are positive or negative
     if (zero_pos > 0) {  // We have negative values
         int y1_start, y1_end;
+        int y2_start, y2_end;
+        int zero_line = ph + 1 - zero_pos;
 
-        // For value 1
-        if (v1 >= 0) {
-            // Positive value: draw from zero line upward
+        // Calculate ranges for value 1
+        if (v1 > 0) {
             y1_start = ph + 1 - l1;
-            y1_end = ph + 1 - zero_pos;
-        } else {
-            // Negative value: draw from zero line downward
-            y1_start = ph + 1 - zero_pos;
+            y1_end = zero_line;
+        } else if (v1 < 0) {
+            y1_start = zero_line;
             y1_end = ph + 1 - l1;
+        } else {
+            y1_start = zero_line;
+            y1_end = zero_line;
         }
 
-        // Draw the lines
-        if (y1_start < y1_end) {
-            mvvline_set(y1_start, x, c1, y1_end - y1_start);
-        } else if (y1_start > y1_end && l1 > 0) {
-            mvvline_set(y1_end, x, c1, y1_start - y1_end);
-        }
-
-        // For value 2
+        // Calculate ranges for value 2
         if (has_v2) {
-            int y2_start, y2_end;
-
             if (v2 > 0) {
                 y2_start = ph + 1 - l2;
-                y2_end = ph + 1 - zero_pos;
+                y2_end = zero_line;
             } else if (v2 < 0) {
-                y2_start = ph + 1 - zero_pos;
+                y2_start = zero_line;
                 y2_end = ph + 1 - l2;
-            } else {  // v2 == 0
-                y2_start = ph + 1 - zero_pos;
-                y2_end = ph + 1 - zero_pos;
+            } else {
+                y2_start = zero_line;
+                y2_end = zero_line;
+            }
+        } else {
+            y2_start = y2_end = -1;
+        }
+
+        if (has_v2 && y2_start != -1) {
+            int overlap_start = (y1_start > y2_start) ? y1_start : y2_start;
+            int overlap_end = (y1_end < y2_end) ? y1_end : y2_end;
+
+            if (y1_start < y2_start) {
+                mvvline_set(y1_start, x, c1, y2_start - y1_start);
+            } else if (y2_start < y1_start) {
+                mvvline_set(y2_start, x, (c2 == hce || c2 == lce) ? &c2r : &space,
+                            y1_start - y2_start);
             }
 
-            // Draw the lines
-            if (y2_start < y2_end) {
-                mvvline_set(y2_start, x, &c2r, y2_end - y2_start);
-            } else if (y2_start > y2_end) {
-                mvvline_set(y2_end, x, &c2r, y2_start - y2_end);
-            } else {  // y2_start == y2_end
-                mvvline_set(y2_start, x, &c2r, 1);
+            if (overlap_start <= overlap_end) {
+                mvvline_set(overlap_start, x, &c2r, overlap_end - overlap_start + 1);
+            }
+
+            if (y1_end > y2_end) {
+                mvvline_set(y2_end + 1, x, c1, y1_end - y2_end);
+            } else if (y2_end > y1_end) {
+                mvvline_set(y1_end + 1, x, (c2 == hce || c2 == lce) ? &c2r : &space,
+                            y2_end - y1_end);
+            }
+        } else {
+            if (y1_start < y1_end) {
+                mvvline_set(y1_start, x, c1, y1_end - y1_start + 1);
+            } else if (y1_start > y1_end) {
+                mvvline_set(y1_end, x, c1, y1_start - y1_end + 1);
+            } else {
+                mvvline_set(y1_start, x, c1, 1);
             }
         }
     } else {
