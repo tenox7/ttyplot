@@ -133,7 +133,7 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 
 ### memory usage from rrdtool and collectd using awk
 ```
-{ while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/memory/memory-used.rrd | awk 'END { print ($NF)/1024/1024 }'; sleep 1; done } | ttyplot -m $(awk '/MemTotal/ { print ($2)/1024 }' /proc/meminfo) -t "Memoru Used" -u MB
+{ while true; do rrdtool lastupdate /var/lib/collectd/rrd/$(hostname)/memory/memory-used.rrd | awk 'END { print ($NF)/1024/1024 }'; sleep 1; done } | ttyplot -m $(awk '/MemTotal/ { print ($2)/1024 }' /proc/meminfo) -t "Memory Used" -u MB
 ```
 
 ### bitcoin price chart using curl and jq
