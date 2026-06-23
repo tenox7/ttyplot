@@ -71,6 +71,9 @@
 #define C_CYAN 6
 #define C_WHITE 7
 
+#define PAIR_BR1 8
+#define PAIR_BR2 9
+
 // Define color element indices
 enum ColorElement {
     LINE_COLOR = 0,
@@ -101,10 +104,13 @@ static double values1[1024] = {0}, values2[1024] = {0};
 static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
            plotwidth = WIDTH_MIN - WIDTH_MARGIN, plotheight = 0;
 static bool fake_clock = false;
+static int braille = 0;
+static int braille_fill = 0;
 static char *errstr = NULL;
 static bool redraw_needed = false;
 // Array of colors for different elements, -1 means no color specified
 static int colors[NUM_COLOR_ELEMENTS] = {-1, -1, -1, -1, -1, -1};
+static int line2color = -1;
 static const char *verstring = "https://github.com/tenox7/ttyplot " VERSION_STR;
 
 static void usage(void) {
@@ -116,6 +122,8 @@ static void usage(void) {
         "  ttyplot -v\n"
         "\n"
         "  -2 read two values and draw two plots, the second one is in reverse video\n"
+        "  -b braille line drawing mode (two lines distinguished by color)\n"
+        "  -f fill area under the line in braille mode (like reverse video)\n"
         "  -r rate of a counter (divide value by measured sample interval)\n"
         "  -c character to use for plot line, eg @ # %% . etc\n"
         "  -e character to use for error line when value exceeds hardmax (default: e)\n"
@@ -129,7 +137,7 @@ static void usage(void) {
         "lower-limit of the plot scale is fixed\n"
         "  -t title of the plot\n"
         "  -u unit displayed beside vertical bar\n"
-        "  -C color[,axes,text,title,max_err,min_err]  set colors (0-7) for elements:\n"
+        "  -C color[/line2][,axes,text,title,max_err,min_err]  set colors (0-7):\n"
         "     First value: plot line color\n"
         "     Second value: axes color (optional)\n"
         "     Third value: text color (optional)\n"
@@ -477,6 +485,92 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         attroff(COLOR_PAIR(LINE_COLOR + 1));
 }
 
+static void plot_braille(int ph, int pw, double *v1, double *v2, double max, double min,
+                         int n) {
+    static const unsigned char dot[4][2] = {
+        {0x01, 0x08}, {0x02, 0x10}, {0x04, 0x20}, {0x40, 0x80}};
+    const int first_col = 3;
+    const int dh = ph * 4, dw = pw * 2;
+
+    if (ph <= 0 || pw <= 0)
+        return;
+
+    double range = max - min;
+    if (range <= 0)
+        range = 1;
+
+    unsigned char *canvas = calloc((size_t)ph * pw, 1);
+    unsigned char *owner = calloc((size_t)ph * pw, 1);
+    if (! canvas || ! owner) {
+        free(canvas);
+        free(owner);
+        return;
+    }
+
+    for (int pass = 0; pass < 2; pass++) {
+        double *vals = (pass == 0) ? v1 : v2;
+        unsigned char who = (pass == 0) ? 1 : 2;
+        if (! vals)
+            continue;
+        int do_fill = (pass == 0) ? braille_fill : 0;
+
+        int prev_y = 0;
+        bool prev_valid = false;
+        for (int x = 0; x < dw; x++) {
+            int a = x / 2;
+            double va = vals[(n + 1 + a) % pw];
+            if (isnan(va)) {
+                prev_valid = false;
+                continue;
+            }
+            double v = va;
+            if ((x & 1) && a + 1 < pw) {
+                double vb = vals[(n + 1 + a + 1) % pw];
+                if (! isnan(vb))
+                    v = (va + vb) / 2;
+            }
+            double frac = (v - min) / range;
+            if (frac < 0)
+                frac = 0;
+            if (frac > 1)
+                frac = 1;
+            int y = (dh - 1) - (int)lrint(frac * (dh - 1));
+
+            int lo = y, hi = y;
+            if (do_fill) {
+                hi = dh - 1;
+            } else if (prev_valid) {
+                lo = (prev_y < y) ? prev_y : y;
+                hi = (prev_y < y) ? y : prev_y;
+            }
+            for (int yy = lo; yy <= hi; yy++) {
+                int idx = (yy / 4) * pw + a;
+                canvas[idx] |= dot[yy & 3][x & 1];
+                owner[idx] = who;
+            }
+            prev_y = y;
+            prev_valid = true;
+        }
+    }
+
+    short p1 = PAIR_BR1;
+    for (int r = 0; r < ph; r++) {
+        for (int c = 0; c < pw; c++) {
+            unsigned char b = canvas[r * pw + c];
+            if (! b)
+                continue;
+            wchar_t ws[2] = {(wchar_t)(0x2800 + b), 0};
+            cchar_t cc;
+            short pair = (owner[r * pw + c] == 2) ? PAIR_BR2 : p1;
+            setcchar(&cc, ws, A_NORMAL, pair, NULL);
+            mvadd_wch(1 + r, first_col + c, &cc);
+        }
+    }
+
+    free(canvas);
+    free(owner);
+}
+
 static void show_all_centered(const char *message) {
     const size_t message_len = strlen(message);
     const int x = ((int)message_len > width) ? 0 : (width / 2 - (int)message_len / 2);
@@ -554,7 +648,14 @@ static void paint_plot(void) {
     if (colors[TEXT_COLOR] != -1)
         attron(COLOR_PAIR(TEXT_COLOR + 1));
 
-    mvvline_set(height - 2, 5, &plotchar, 1);
+    if (braille) {
+        wchar_t iw[2] = {0x28FF, 0};
+        cchar_t ind;
+        setcchar(&ind, iw, A_NORMAL, PAIR_BR1, NULL);
+        mvadd_wch(height - 2, 5, &ind);
+    } else {
+        mvvline_set(height - 2, 5, &plotchar, 1);
+    }
     if (v > 0) {
         mvprintw(height - 2, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s ", values1[n],
                  min1, max1, avg1, unit);
@@ -562,7 +663,14 @@ static void paint_plot(void) {
             printw(" interval=%.3gs", td);
     }
     if (two) {
-        mvaddch(height - 1, 5, ' ' | A_REVERSE);
+        if (braille) {
+            wchar_t iw[2] = {0x28FF, 0};
+            cchar_t ind;
+            setcchar(&ind, iw, A_NORMAL, PAIR_BR2, NULL);
+            mvadd_wch(height - 1, 5, &ind);
+        } else {
+            mvaddch(height - 1, 5, ' ' | A_REVERSE);
+        }
         if (v > 0) {
             mvprintw(height - 1, 7, "last=%.1f min=%.1f max=%.1f avg=%.1f %s   ",
                      values2[n], min2, max2, avg2, unit);
@@ -572,8 +680,11 @@ static void paint_plot(void) {
     if (colors[TEXT_COLOR] != -1)
         attroff(COLOR_PAIR(TEXT_COLOR + 1));
 
-    plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
-                &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
+    if (braille)
+        plot_braille(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n);
+    else
+        plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
+                    &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
 
     draw_axes(height, plotheight, plotwidth, max, min, unit);
 
@@ -819,7 +930,7 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vhC:";
+    const char *optstring = "2bfrc:e:E:s:S:m:M:t:u:vhC:";
     int show_ver;
     int show_usage;
 
@@ -892,6 +1003,12 @@ int main(int argc, char *argv[]) {
             case '2':
                 two = 1;
                 break;
+            case 'b':
+                braille = 1;
+                break;
+            case 'f':
+                braille_fill = 1;
+                break;
             case 'c':
                 mbtowc(&plotchar.chars[0], optarg, MB_CUR_MAX);
                 break;
@@ -913,7 +1030,16 @@ int main(int argc, char *argv[]) {
                     int color_idx = 0;
 
                     while (token != NULL && color_idx < NUM_COLOR_ELEMENTS) {
-                        colors[color_idx++] = atoi(token);
+                        if (color_idx == 0) {
+                            char *slash = strchr(token, '/');
+                            if (slash) {
+                                *slash = '\0';
+                                line2color = atoi(slash + 1);
+                            }
+                        }
+                        if (*token)
+                            colors[color_idx] = atoi(token);
+                        color_idx++;
                         token = strtok(NULL, ",");
                     }
 
@@ -949,6 +1075,9 @@ int main(int argc, char *argv[]) {
     if (hardmax <= hardmin)
         hardmax = FLT_MAX;
 
+    if (braille && MB_CUR_MAX <= 1)
+        braille = 0;
+
     if (initscr() == NULL) {
         fprintf(stderr, "Error: failed to initialize ncurses\n");
         exit(1);
@@ -968,7 +1097,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (has_colors) {
+    if (has_colors || braille) {
         start_color();
         use_default_colors();
 
@@ -985,6 +1114,15 @@ int main(int argc, char *argv[]) {
             if (colors[i] != -1) {
                 init_pair(i + 1, colors[i], -1);  // -1 for default background
             }
+        }
+
+        if (braille) {
+            int br1 = (colors[LINE_COLOR] != -1) ? colors[LINE_COLOR] : C_GREEN;
+            int br2 = (line2color != -1) ? line2color
+                      : (br1 == C_BLUE)  ? C_GREEN
+                                         : C_BLUE;
+            init_pair(PAIR_BR1, br1, -1);
+            init_pair(PAIR_BR2, br2, -1);
         }
     }
 

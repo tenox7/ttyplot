@@ -223,11 +223,13 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
 ## flags
 
 ```
-  ttyplot [-2] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
+  ttyplot [-2] [-b] [-f] [-r] [-c plotchar] [-s scale] [-m max] [-M min] [-t title] [-u unit]
   ttyplot -h
   ttyplot -v
 
   -2 read two values and draw two plots, the second one is in reverse video
+  -b (experimental) braille line drawing mode, two lines in color
+  -f (experimental) fill area under braille line 1
   -r rate of a counter (divide value by measured sample interval)
   -c character to use for plot line, eg @ # % . etc
   -e character to use for error line when value exceeds hardmax (default: e)
@@ -253,6 +255,21 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
      Colors: 0=black, 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
   -v print the current version and exit
   -h print this help message and exit
+```
+
+&nbsp;
+&nbsp;
+
+
+## experimental: braille line drawing
+
+> **experimental** — this feature and its flags may still change
+
+`-b` draws **braille** lines instead of block / reverse-video bars. with `-2`: line 1 green, line 2 blue (no reverse video); `-f` fills under line 1; `-C n` sets line 1, `-C n/m` sets both. needs a UTF-8 locale and a braille-capable font, else falls back.
+
+```
+ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -b -t "ping to 8.8.8.8" -u ms
+vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -b -2 -f -t "procs in R and D"
 ```
 
 &nbsp;
