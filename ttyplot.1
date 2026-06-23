@@ -1,4 +1,4 @@
-.Dd January 20, 2024
+.Dd June 23, 2026
 .Dt TTYPLOT 1
 .Os
 .Sh NAME
@@ -6,11 +6,21 @@
 .Nd realtime terminal plotting utility
 .Sh SYNOPSIS
 .Nm
-.Op Ar options
+.Op Fl 2bBfr
+.Op Fl c Ar plotchar
+.Op Fl e Ar errcharmax
+.Op Fl E Ar errcharmin
+.Op Fl s Ar softmax
+.Op Fl S Ar softmin
+.Op Fl m Ar hardmax
+.Op Fl M Ar hardmin
+.Op Fl t Ar title
+.Op Fl u Ar unit
+.Op Fl C Ar colorspec
 .Nm
--v
+.Fl v
 .Nm
--h
+.Fl h
 .Sh DESCRIPTION
 .Nm
 takes data from standard input,
@@ -25,12 +35,28 @@ etc.,
 and plots in text mode on a terminal in real time.
 .Pp
 Supports rate calculation for counters and up to two graphs
-on a single display using reverse video for second line.
+on a single display, using reverse video for the second line
+or, experimentally, braille or block element line drawing in color.
 .Pp
 The following options are supported:
 .Bl -tag -width Ds
 .It Fl 2
 Read two values and draw two plots, the second in reverse video.
+.It Fl b
+.Pq Experimental
+Use braille line drawing instead of block/reverse-video bars.
+With
+.Fl 2 ,
+the two lines are distinguished by color rather than reverse video.
+Requires a UTF-8 locale and a capable font, otherwise falls back.
+.It Fl B
+.Pq Experimental
+Use block element (quadrant) line drawing, like
+.Fl b .
+.It Fl f
+.Pq Experimental
+Fill the area under the line in braille or block mode
+.Pq line 1 .
 .It Fl r
 Calculate counter rate and divide by measured sample interval.
 .It Fl c Ar plotchar
@@ -55,6 +81,10 @@ Default:
 Use
 .Ar softmax
 as the initial maximum value but allow it to grow with input.
+.It Fl S Ar softmin
+Use
+.Ar softmin
+as the initial minimum value but allow it to shrink with input.
 .It Fl m Ar hardmax
 Use
 .Ar hardmax
@@ -78,6 +108,56 @@ as the plot title.
 .It Fl u Ar unit
 Label the vertical axis
 .Ar unit .
+.It Fl C Ar colorspec
+Set colors for plot elements.
+.Ar colorspec
+is either a predefined scheme name or a comma-separated list of
+color numbers
+.Pq Ar 0-7 :
+.Ar plotchar Ns Op / Ns Ar line2 ,
+.Ar axes ,
+.Ar text ,
+.Ar title ,
+.Ar max_err ,
+.Ar min_err .
+Only the first value, the plot line color, is required; the rest
+are optional.
+The optional
+.Ar line2
+sets the second line color in braille or block mode.
+For example
+.Ql Fl C Ar 1,2,3,4,5,6 ,
+.Ql Fl C Ar 1,2
+or
+.Ql Fl C Ar 1 .
+The color numbers are
+.Ar 0
+black,
+.Ar 1
+red,
+.Ar 2
+green,
+.Ar 3
+yellow,
+.Ar 4
+blue,
+.Ar 5
+magenta,
+.Ar 6
+cyan and
+.Ar 7
+white.
+Alternatively,
+.Ar colorspec
+may name a predefined scheme:
+.Ar dark1
+or
+.Ar dark2
+for dark terminals,
+.Ar light1
+or
+.Ar light2
+for light terminals.
 .It Fl v
 Print the current version and exit.
 .It Fl h
@@ -92,6 +172,13 @@ accepts the following commands typed at the terminal:
 Quit.
 .It Ic r
 Toggle "rate mode" on and off.
+.It Ic Ctrl-L
+Full screen redraw.
+.El
+.Pp
+These commands do not work when standard input is a terminal;
+in that case quit with
+.Ql Ctrl-C .
 .Sh EXAMPLES
 CPU usage from
 .Xr vmstat 8
@@ -147,6 +234,23 @@ Ping plot with
 ping 8.8.8.8 \\
  | sed -u 's/^.*time=//g; s/ ms//g' \\
  | ttyplot -t "ping to 8.8.8.8" -u ms
+.Ed
+.Pp
+The same ping plot, drawn with braille
+.Pq see Fl b :
+.Bd -literal -offset indent
+ping 8.8.8.8 \\
+ | sed -u 's/^.*time=//g; s/ ms//g' \\
+ | ttyplot -b -t "ping to 8.8.8.8" -u ms
+.Ed
+.Pp
+The same ping plot, with custom colors for the line, axes, text
+and title
+.Pq see Fl C :
+.Bd -literal -offset indent
+ping 8.8.8.8 \\
+ | sed -u 's/^.*time=//g; s/ ms//g' \\
+ | ttyplot -t "ping to 8.8.8.8" -u ms -C 2,3,4,5
 .Ed
 .Pp
 WiFi signal level in -dBM (higher is worse) using
@@ -310,19 +414,21 @@ and
 Its readme was converted into this manual page by
 .An Sijmen J. Mulder Aq Mt ik@sjmulder.nl .
 .Sh BUGS
-By default in standard in- and output are is buffered.
+By default standard input and output are buffered.
 This can be worked around in various
 .Lk http://www.perkin.org.uk/posts/how-to-fix-stdio-buffering.html ways .
 .Pp
+When there is no more data,
 .Nm
-quits and erases the screen when there is no more data.
-This is by design and can be worked around by adding
-.Xr sleep 1
-or
-.Xr read 1 ,
-for example:
+prints
+.Dq input stream closed
+and waits rather than quitting
+.Pq prior to version 1.5 it quit .
+The screen is normally erased on exit because of the terminal's
+.Lk https://invisible-island.net/xterm/xterm.faq.html#xterm_tite "alternate screen" ;
+this can be worked around, for example:
 .Pp
-.Dl { echo "1 2 3"; sleep 1000; } | ttyplot
+.Dl echo 1 2 3 | TERM=vt100 ttyplot
 .Pp
 When running interactively and non-numeric data is entered
 .Pq e.g. some key
