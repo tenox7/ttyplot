@@ -96,7 +96,7 @@ free -m -s 1 | stdbuf -o0 grep "^Mem:" | stdbuf -o0 tr -s " " | stdbuf -o0 cut -
 ### memory usage on macOS
 
 ```
-vm_stat 1 | awk '{ print int($2)*4096/1024^3; fflush(); }' | ttyplot -t "MacOS Memory Usage" -u GB
+vm_stat 1 | awk '{ print int($2)/2^18; fflush(); }' | ttyplot -t "MacOS Memory Usage" -u GB
 ```
 
 ### number of processes in running and io blocked state
