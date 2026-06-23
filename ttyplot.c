@@ -106,6 +106,7 @@ static int width = 0, height = 0, n = -1, v = 0, c = 0, rate = 0, two = 0,
 static bool fake_clock = false;
 static int braille = 0;
 static int braille_fill = 0;
+static int block = 0;
 static char *errstr = NULL;
 static bool redraw_needed = false;
 // Array of colors for different elements, -1 means no color specified
@@ -123,7 +124,8 @@ static void usage(void) {
         "\n"
         "  -2 read two values and draw two plots, the second one is in reverse video\n"
         "  -b braille line drawing mode (two lines distinguished by color)\n"
-        "  -f fill area under the line in braille mode (like reverse video)\n"
+        "  -B block elements drawing mode (quadrants), like -b\n"
+        "  -f fill area under the line in braille/block mode (line 1)\n"
         "  -r rate of a counter (divide value by measured sample interval)\n"
         "  -c character to use for plot line, eg @ # %% . etc\n"
         "  -e character to use for error line when value exceeds hardmax (default: e)\n"
@@ -485,12 +487,20 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         attroff(COLOR_PAIR(LINE_COLOR + 1));
 }
 
-static void plot_braille(int ph, int pw, double *v1, double *v2, double max, double min,
-                         int n) {
-    static const unsigned char dot[4][2] = {
-        {0x01, 0x08}, {0x02, 0x10}, {0x04, 0x20}, {0x40, 0x80}};
+// braille (2x4) bits indexed [(y%4)*2 + (x&1)]; quadrant (2x2) bits indexed [(y%2)*2 + (x&1)]
+static const unsigned char braille_bits[8] = {0x01, 0x08, 0x02, 0x10,
+                                              0x04, 0x20, 0x40, 0x80};
+static const unsigned char quad_bits[4] = {1, 2, 4, 8};
+static const wchar_t quad_glyphs[16] = {L' ',   0x2598, 0x259D, 0x2580, 0x2596, 0x258C,
+                                        0x259E, 0x259B, 0x2597, 0x259A, 0x2590, 0x259C,
+                                        0x2584, 0x2599, 0x259F, 0x2588};
+
+// Render v1/v2 onto a sub-cell pixel grid (sub vertical pixels per cell, 2 horizontal).
+// glyphs==NULL selects braille (U+2800+bits); otherwise a 16-entry quadrant table.
+static void plot_dots(int ph, int pw, double *v1, double *v2, double max, double min,
+                      int n, int sub, const unsigned char *bits, const wchar_t *glyphs) {
     const int first_col = 3;
-    const int dh = ph * 4, dw = pw * 2;
+    const int dh = ph * sub, dw = pw * 2;
 
     if (ph <= 0 || pw <= 0)
         return;
@@ -510,9 +520,9 @@ static void plot_braille(int ph, int pw, double *v1, double *v2, double max, dou
     for (int pass = 0; pass < 2; pass++) {
         double *vals = (pass == 0) ? v1 : v2;
         unsigned char who = (pass == 0) ? 1 : 2;
+        int do_fill = (pass == 0) ? braille_fill : 0;
         if (! vals)
             continue;
-        int do_fill = (pass == 0) ? braille_fill : 0;
 
         int prev_y = 0;
         bool prev_valid = false;
@@ -544,8 +554,8 @@ static void plot_braille(int ph, int pw, double *v1, double *v2, double max, dou
                 hi = (prev_y < y) ? y : prev_y;
             }
             for (int yy = lo; yy <= hi; yy++) {
-                int idx = (yy / 4) * pw + a;
-                canvas[idx] |= dot[yy & 3][x & 1];
+                int idx = (yy / sub) * pw + a;
+                canvas[idx] |= bits[(yy % sub) * 2 + (x & 1)];
                 owner[idx] = who;
             }
             prev_y = y;
@@ -553,15 +563,14 @@ static void plot_braille(int ph, int pw, double *v1, double *v2, double max, dou
         }
     }
 
-    short p1 = PAIR_BR1;
     for (int r = 0; r < ph; r++) {
         for (int c = 0; c < pw; c++) {
             unsigned char b = canvas[r * pw + c];
             if (! b)
                 continue;
-            wchar_t ws[2] = {(wchar_t)(0x2800 + b), 0};
+            wchar_t ws[2] = {glyphs ? glyphs[b] : (wchar_t)(0x2800 + b), 0};
             cchar_t cc;
-            short pair = (owner[r * pw + c] == 2) ? PAIR_BR2 : p1;
+            short pair = (owner[r * pw + c] == 2) ? PAIR_BR2 : PAIR_BR1;
             setcchar(&cc, ws, A_NORMAL, pair, NULL);
             mvadd_wch(1 + r, first_col + c, &cc);
         }
@@ -648,8 +657,8 @@ static void paint_plot(void) {
     if (colors[TEXT_COLOR] != -1)
         attron(COLOR_PAIR(TEXT_COLOR + 1));
 
-    if (braille) {
-        wchar_t iw[2] = {0x28FF, 0};
+    if (braille || block) {
+        wchar_t iw[2] = {braille ? 0x28FF : 0x2588, 0};
         cchar_t ind;
         setcchar(&ind, iw, A_NORMAL, PAIR_BR1, NULL);
         mvadd_wch(height - 2, 5, &ind);
@@ -663,8 +672,8 @@ static void paint_plot(void) {
             printw(" interval=%.3gs", td);
     }
     if (two) {
-        if (braille) {
-            wchar_t iw[2] = {0x28FF, 0};
+        if (braille || block) {
+            wchar_t iw[2] = {braille ? 0x28FF : 0x2588, 0};
             cchar_t ind;
             setcchar(&ind, iw, A_NORMAL, PAIR_BR2, NULL);
             mvadd_wch(height - 1, 5, &ind);
@@ -681,7 +690,11 @@ static void paint_plot(void) {
         attroff(COLOR_PAIR(TEXT_COLOR + 1));
 
     if (braille)
-        plot_braille(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n);
+        plot_dots(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n, 4,
+                  braille_bits, NULL);
+    else if (block)
+        plot_dots(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n, 2,
+                  quad_bits, quad_glyphs);
     else
         plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
                     &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
@@ -930,7 +943,7 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2bfrc:e:E:s:S:m:M:t:u:vhC:";
+    const char *optstring = "2bBfrc:e:E:s:S:m:M:t:u:vhC:";
     int show_ver;
     int show_usage;
 
@@ -1006,6 +1019,9 @@ int main(int argc, char *argv[]) {
             case 'b':
                 braille = 1;
                 break;
+            case 'B':
+                block = 1;
+                break;
             case 'f':
                 braille_fill = 1;
                 break;
@@ -1075,8 +1091,8 @@ int main(int argc, char *argv[]) {
     if (hardmax <= hardmin)
         hardmax = FLT_MAX;
 
-    if (braille && MB_CUR_MAX <= 1)
-        braille = 0;
+    if (MB_CUR_MAX <= 1)
+        braille = block = 0;
 
     if (initscr() == NULL) {
         fprintf(stderr, "Error: failed to initialize ncurses\n");
@@ -1097,7 +1113,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (has_colors || braille) {
+    if (has_colors || braille || block) {
         start_color();
         use_default_colors();
 
@@ -1116,7 +1132,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (braille) {
+        if (braille || block) {
             int br1 = (colors[LINE_COLOR] != -1) ? colors[LINE_COLOR] : C_GREEN;
             int br2 = (line2color != -1) ? line2color
                       : (br1 == C_BLUE)  ? C_GREEN
