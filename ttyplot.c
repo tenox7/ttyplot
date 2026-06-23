@@ -148,8 +148,8 @@ static void usage(void) {
         "     Sixth value: min error indicator color (optional)\n"
         "     Example: -C 1,2,3,4,5,6 or -C 1,2 or -C 1\n"
         "     Predefined color schemes:\n"
-        "       -C dark1    Blue-cyan-yellow scheme for dark terminals\n"
-        "       -C dark2    Purple-yellow-green scheme for dark terminals\n"
+        "       -C dark1    Red-green lines for dark terminals\n"
+        "       -C dark2    Blue-yellow lines for dark terminals\n"
         "       -C light1   Green-blue-red scheme for light terminals\n"
         "       -C light2   Blue-green-yellow scheme for light terminals\n"
         "  -v print the current version and exit\n"
@@ -168,21 +168,23 @@ static void version(void) {
 // Set a predefined color scheme
 static void set_color_scheme(const char *scheme_name) {
     if (strcmp(scheme_name, "dark1") == 0) {
-        // Blue-cyan-yellow scheme for dark terminals
-        colors[LINE_COLOR] = C_BLUE;        // Blue for plot line
+        // Red-green lines for dark terminals
+        colors[LINE_COLOR] = C_RED;         // Red for plot line
+        line2color = C_GREEN;               // Green for second plot line
         colors[AXES_COLOR] = C_CYAN;        // Cyan for axes
         colors[TEXT_COLOR] = C_WHITE;       // White for text
         colors[TITLE_COLOR] = C_YELLOW;     // Yellow for title
         colors[MAX_ERROR_COLOR] = C_RED;    // Red for max error
         colors[MIN_ERROR_COLOR] = C_GREEN;  // Green for min error
     } else if (strcmp(scheme_name, "dark2") == 0) {
-        // Purple-yellow-green scheme for dark terminals
-        colors[LINE_COLOR] = C_MAGENTA;    // Magenta for plot line
-        colors[AXES_COLOR] = C_YELLOW;     // Yellow for axes
-        colors[TEXT_COLOR] = C_CYAN;       // Cyan for text
+        // Blue-yellow lines for dark terminals
+        colors[LINE_COLOR] = C_BLUE;       // Blue for plot line
+        line2color = C_YELLOW;             // Yellow for second plot line
+        colors[AXES_COLOR] = C_CYAN;       // Cyan for axes
+        colors[TEXT_COLOR] = C_WHITE;      // White for text
         colors[TITLE_COLOR] = C_GREEN;     // Green for title
         colors[MAX_ERROR_COLOR] = C_RED;   // Red for max error
-        colors[MIN_ERROR_COLOR] = C_BLUE;  // Blue for min error
+        colors[MIN_ERROR_COLOR] = C_MAGENTA;  // Magenta for min error
     } else if (strcmp(scheme_name, "light1") == 0) {
         // Green-blue-red scheme for light terminals
         colors[LINE_COLOR] = C_GREEN;         // Green for plot line

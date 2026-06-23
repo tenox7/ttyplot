@@ -249,8 +249,8 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
      Sixth value: min error indicator color (optional)
      Example: -C 1,2,3,4,5,6 or -C 1,2 or -C 1
      Predefined color schemes:
-       -C dark1    Blue-cyan-yellow scheme for dark terminals
-       -C dark2    Purple-yellow-green scheme for dark terminals
+       -C dark1    Red-green lines for dark terminals
+       -C dark2    Blue-yellow lines for dark terminals
        -C light1   Green-blue-red scheme for light terminals
        -C light2   Blue-green-yellow scheme for light terminals
      Colors: 0=black, 1=red, 2=green, 3=yellow, 4=blue, 5=magenta, 6=cyan, 7=white
