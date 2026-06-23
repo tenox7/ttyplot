@@ -17,6 +17,14 @@ supports rate calculation for counters and up to two graphs on a single display 
 &nbsp;
 &nbsp;
 
+experimental braille and block element support:
+
+![braille support](braille.png)
+
+&nbsp;
+&nbsp;
+
+
 ## get
 
 <a href="https://repology.org/project/ttyplot/versions">
