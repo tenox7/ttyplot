@@ -178,12 +178,12 @@ static void set_color_scheme(const char *scheme_name) {
         colors[MIN_ERROR_COLOR] = C_GREEN;  // Green for min error
     } else if (strcmp(scheme_name, "dark2") == 0) {
         // Blue-yellow lines for dark terminals
-        colors[LINE_COLOR] = C_BLUE;       // Blue for plot line
-        line2color = C_YELLOW;             // Yellow for second plot line
-        colors[AXES_COLOR] = C_CYAN;       // Cyan for axes
-        colors[TEXT_COLOR] = C_WHITE;      // White for text
-        colors[TITLE_COLOR] = C_GREEN;     // Green for title
-        colors[MAX_ERROR_COLOR] = C_RED;   // Red for max error
+        colors[LINE_COLOR] = C_BLUE;          // Blue for plot line
+        line2color = C_YELLOW;                // Yellow for second plot line
+        colors[AXES_COLOR] = C_CYAN;          // Cyan for axes
+        colors[TEXT_COLOR] = C_WHITE;         // White for text
+        colors[TITLE_COLOR] = C_GREEN;        // Green for title
+        colors[MAX_ERROR_COLOR] = C_RED;      // Red for max error
         colors[MIN_ERROR_COLOR] = C_MAGENTA;  // Magenta for min error
     } else if (strcmp(scheme_name, "light1") == 0) {
         // Green-blue-red scheme for light terminals
@@ -489,7 +489,8 @@ static void plot_values(int ph, int pw, double *v1, double *v2, double max, doub
         attroff(COLOR_PAIR(LINE_COLOR + 1));
 }
 
-// braille (2x4) bits indexed [(y%4)*2 + (x&1)]; quadrant (2x2) bits indexed [(y%2)*2 + (x&1)]
+// braille (2x4) bits indexed [(y%4)*2 + (x&1)]; quadrant (2x2) bits indexed [(y%2)*2 +
+// (x&1)]
 static const unsigned char braille_bits[8] = {0x01, 0x08, 0x02, 0x10,
                                               0x04, 0x20, 0x40, 0x80};
 static const unsigned char quad_bits[4] = {1, 2, 4, 8};
@@ -500,7 +501,8 @@ static const wchar_t quad_glyphs[16] = {L' ',   0x2598, 0x259D, 0x2580, 0x2596, 
 // Render v1/v2 onto a sub-cell pixel grid (sub vertical pixels per cell, 2 horizontal).
 // glyphs==NULL selects braille (U+2800+bits); otherwise a 16-entry quadrant table.
 static void plot_dots(int ph, int pw, double *v1, double *v2, double max, double min,
-                      int n, int sub, const unsigned char *bits, const wchar_t *glyphs) {
+                      int n, int sub, const unsigned char *bits,
+                      const wchar_t *glyphs) {
     const int first_col = 3;
     const int dh = ph * sub, dw = pw * 2;
 
