@@ -149,9 +149,10 @@ ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -t "ping to 8.8.8.8" -
 { while true; do curl -sL https://api.coindesk.com/v1/bpi/currentprice.json  | jq .bpi.USD.rate_float; sleep 600; done } | ttyplot -t "bitcoin price" -u usd
 ```
 
-### stock quote chart
+### stock price chart using curl and jq
+
 ```
-{ while true; do curl -sL https://api.iextrading.com/1.0/stock/googl/price; echo; sleep 600; done } | ttyplot -t "google stock price" -u usd
+{ while true; do curl -s "https://query1.finance.yahoo.com/v8/finance/chart/SPY" -H "User-Agent: Mozilla/5.0" | jq '.chart.result[0].meta.regularMarketPrice'; sleep 60; done } | ttyplot -t "SPY stock price" -u usd
 ```
 
 ### prometheus load average via node_exporter
