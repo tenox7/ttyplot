@@ -7,6 +7,13 @@ CFLAGS += -Wall -Wextra
 CFLAGS += `pkg-config --cflags ncursesw`
 LDLIBS += `pkg-config --libs ncursesw` -lm
 
+# Experimental, opt-in ASCII-art rendering backend (aalib). Off by default;
+# build with `make AA=1` (requires aalib and its aalib-config helper).
+ifdef AA
+CPPFLAGS += -DAALIB `aalib-config --cflags`
+LDLIBS   += `aalib-config --libs`
+endif
+
 all: ttyplot stresstest
 
 install: ttyplot ttyplot.1

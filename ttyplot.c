@@ -41,6 +41,14 @@
 #include <err.h>
 #endif
 
+// Experimental, opt-in ASCII-art rendering backend (build with -DAALIB -laa).
+#ifdef AALIB
+#include <aalib.h>
+#define AA_OPT "A"
+#else
+#define AA_OPT ""
+#endif
+
 #define T_RARR '>'
 #define T_UARR '^'
 #ifdef NOACS
@@ -107,6 +115,7 @@ static bool fake_clock = false;
 static int braille = 0;
 static int braille_fill = 0;
 static int block = 0;
+static int aa = 0;  // only settable when compiled with -DAALIB (see optstring)
 static char *errstr = NULL;
 static bool redraw_needed = false;
 // Array of colors for different elements, -1 means no color specified
@@ -126,6 +135,10 @@ static void usage(void) {
         "  -b braille line drawing mode (two lines distinguished by color)\n"
         "  -B block elements drawing mode (quadrants), like -b\n"
         "  -f fill area under the line in braille/block mode (line 1)\n"
+#ifdef AALIB
+        "  -A (experimental) aalib ASCII-art line mode, two lines in color (-f fills "
+        "line 1)\n"
+#endif
         "  -r rate of a counter (divide value by measured sample interval)\n"
         "  -c character to use for plot line, eg @ # %% . etc\n"
         "  -e character to use for error line when value exceeds hardmax (default: e)\n"
@@ -584,6 +597,107 @@ static void plot_dots(int ph, int pw, double *v1, double *v2, double max, double
     free(owner);
 }
 
+#ifdef AALIB
+// aa is the "dumb terminal" tier: smooth lines in plain 7-bit ASCII. In a C/POSIX
+// locale aalib natively emits its 7-bit glyph ramp, which we pass through untouched.
+// In a UTF-8 locale it insists on 8-bit CP437 glyphs instead (a load-time decision we
+// can't override in-process), so we fold those high bytes down to a 7-bit ASCII
+// approximation by shape. For the authentic smooth ramp, run with LC_ALL=C.
+static char aa_ascii(unsigned char b) {
+    if (b >= 0x20 && b < 0x7f)  // includes aalib's own 7-bit ramp
+        return (char)b;
+    switch (b) {
+        case 0xDB:              // full block
+        case 0xB2: return '#';  // dark shade
+        case 0xB1: return '+';  // medium shade
+        case 0xB0: return ':';  // light shade
+        case 0xDF: return '"';  // upper half
+        case 0xDC: return '.';  // lower half
+        case 0xDD: return '[';  // left half
+        case 0xDE: return ']';  // right half
+        case 0xCC:              // diagonal quadrants
+        case 0xA5: return 'x';
+    }
+    return b ? '*' : ' ';
+}
+
+// Experimental: render up to two series as aalib 7-bit ASCII-art, one pass each so the
+// two lines can be colored independently (like braille/block mode: line 1 PAIR_BR1,
+// line 2 PAIR_BR2). Without -f each series is a connected line; with -f, line 1's area
+// is filled. The aalib context is recreated every paint so it tracks resizes for free.
+static void plot_aa(int ph, int pw, double *v1, double *v2, double max, double min,
+                    int n) {
+    const int first_col = 3;
+    if (ph <= 0 || pw <= 0)
+        return;
+
+    double range = max - min;
+    if (range <= 0)
+        range = 1;
+
+    struct aa_hardware_params hp = aa_defparams;
+    hp.width = pw;
+    hp.height = ph;
+    aa_context *c = aa_init(&mem_d, &hp, NULL);
+    if (! c)
+        return;
+
+    const int iw = aa_imgwidth(c), ih = aa_imgheight(c);
+
+    for (int pass = 0; pass < 2; pass++) {
+        double *vals = (pass == 0) ? v1 : v2;
+        int do_fill = (pass == 0) ? braille_fill : 0;  // -f fills line 1 only
+        short pair = (pass == 0) ? PAIR_BR1 : PAIR_BR2;
+        if (! vals)
+            continue;
+
+        memset(aa_image(c), 0, (size_t)iw * ih);
+
+        int prev_y = 0;
+        bool prev_valid = false;
+        for (int x = 0; x < iw; x++) {
+            int a = x * pw / iw;  // image column -> data column
+            double va = vals[(n + 1 + a) % pw];
+            if (isnan(va)) {
+                prev_valid = false;
+                continue;
+            }
+            double frac = (va - min) / range;
+            if (frac < 0)
+                frac = 0;
+            if (frac > 1)
+                frac = 1;
+            int y = (ih - 1) - (int)lrint(frac * (ih - 1));
+
+            int lo = y, hi = y;
+            if (do_fill) {
+                hi = ih - 1;
+            } else if (prev_valid) {
+                lo = (prev_y < y) ? prev_y : y;
+                hi = (prev_y < y) ? y : prev_y;
+            }
+            for (int yy = lo; yy <= hi; yy++)
+                aa_putpixel(c, x, yy, 255);
+            prev_y = y;
+            prev_valid = true;
+        }
+
+        aa_render(c, &aa_defrenderparams, 0, 0, pw, ph);
+        unsigned char *text = aa_text(c);
+        for (int r = 0; r < ph; r++)
+            for (int col = 0; col < pw; col++) {
+                unsigned char b = text[r * pw + col];
+                if (b == 0 || b == ' ')
+                    continue;
+                mvaddch(1 + r, first_col + col,
+                        (chtype)aa_ascii(b) | COLOR_PAIR(pair));
+            }
+    }
+
+    aa_close(c);
+}
+#endif
+
 static void show_all_centered(const char *message) {
     const size_t message_len = strlen(message);
     const int x = ((int)message_len > width) ? 0 : (width / 2 - (int)message_len / 2);
@@ -666,6 +780,8 @@ static void paint_plot(void) {
         cchar_t ind;
         setcchar(&ind, iw, A_NORMAL, PAIR_BR1, NULL);
         mvadd_wch(height - 2, 5, &ind);
+    } else if (aa) {
+        mvaddch(height - 2, 5, '#' | COLOR_PAIR(PAIR_BR1));
     } else {
         mvvline_set(height - 2, 5, &plotchar, 1);
     }
@@ -681,6 +797,8 @@ static void paint_plot(void) {
             cchar_t ind;
             setcchar(&ind, iw, A_NORMAL, PAIR_BR2, NULL);
             mvadd_wch(height - 1, 5, &ind);
+        } else if (aa) {
+            mvaddch(height - 1, 5, '#' | COLOR_PAIR(PAIR_BR2));
         } else {
             mvaddch(height - 1, 5, ' ' | A_REVERSE);
         }
@@ -699,6 +817,10 @@ static void paint_plot(void) {
     else if (block)
         plot_dots(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n, 2,
                   quad_bits, quad_glyphs);
+#ifdef AALIB
+    else if (aa)
+        plot_aa(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n);
+#endif
     else
         plot_values(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, n,
                     &plotchar, &max_errchar, &min_errchar, hardmax, hardmin);
@@ -947,7 +1069,7 @@ int main(int argc, char *argv[]) {
     int i;
     bool stdin_is_open = true;
     int cached_opterr;
-    const char *optstring = "2bBfrc:e:E:s:S:m:M:t:u:vhC:";
+    const char *optstring = "2bBf" AA_OPT "rc:e:E:s:S:m:M:t:u:vhC:";
     int show_ver;
     int show_usage;
 
@@ -1026,6 +1148,11 @@ int main(int argc, char *argv[]) {
             case 'B':
                 block = 1;
                 break;
+#ifdef AALIB
+            case 'A':
+                aa = 1;
+                break;
+#endif
             case 'f':
                 braille_fill = 1;
                 break;
@@ -1095,6 +1222,7 @@ int main(int argc, char *argv[]) {
     if (hardmax <= hardmin)
         hardmax = FLT_MAX;
 
+    // braille/block need wide glyphs; aa is 7-bit ASCII so it works on dumb terminals.
     if (MB_CUR_MAX <= 1)
         braille = block = 0;
 
@@ -1117,7 +1245,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (has_colors || braille || block) {
+    if (has_colors || braille || block || aa) {
         start_color();
         use_default_colors();
 
@@ -1136,7 +1264,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if (braille || block) {
+        if (braille || block || aa) {
             int br1 = (colors[LINE_COLOR] != -1) ? colors[LINE_COLOR] : C_GREEN;
             int br2 = (line2color != -1) ? line2color
                       : (br1 == C_BLUE)  ? C_GREEN

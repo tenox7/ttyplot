@@ -240,6 +240,7 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
   -b (experimental) braille line drawing mode, two lines in color
   -B (experimental) block elements drawing mode (quadrants), like -b
   -f (experimental) fill area under braille/block line 1
+  -A (experimental) aalib ASCII-art line mode, two lines in color (only if built with AA=1)
   -r rate of a counter (divide value by measured sample interval)
   -c character to use for plot line, eg @ # % . etc
   -e character to use for error line when value exceeds hardmax (default: e)
@@ -280,6 +281,18 @@ This example sets color 2 (green) for the plot line, color 3 (yellow) for the ax
 ```
 ping 8.8.8.8 | sed -u 's/^.*time=//g; s/ ms//g' | ttyplot -b -t "ping to 8.8.8.8" -u ms
 vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | ttyplot -b -2 -f -t "procs in R and D"
+```
+
+
+## experimental: aalib ASCII-art rendering
+
+> **very experimental / throwaway** — off by default, opt-in at build time
+
+`-A` draws smooth **7-bit ASCII** lines via [aalib](https://aa-project.sourceforge.net/aalib/) (think `aafire`), for dumb terminals that can't do braille/Unicode. same two-line color and `-f` fill as braille. not built by default: `make AA=1` (needs aalib + `aalib-config`, adds `-DAALIB -laa`). smoothest in a C locale (`LC_ALL=C`); UTF-8 folds down to approximate ASCII.
+
+```
+make AA=1
+vmstat -n 1 | perl -lane 'BEGIN{$|=1} print "@F[0,1]"' | LC_ALL=C ttyplot -A -2 -f -t "procs in R and D"
 ```
 
 &nbsp;

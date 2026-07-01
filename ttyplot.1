@@ -57,6 +57,21 @@ Use block element (quadrant) line drawing, like
 .Pq Experimental
 Fill the area under the line in braille or block mode
 .Pq line 1 .
+.It Fl A
+.Pq Experimental
+Render the plot as
+.Xr aalib 3
+ASCII art: smooth lines in plain 7-bit ASCII, for dumb terminals that cannot
+display braille or block glyphs.
+Like braille or block mode it draws up to two lines distinguished by color, and
+.Fl f
+fills the area under line 1.
+aalib emits its native 7-bit ramp in a C locale; in a UTF-8 locale it is forced
+to 8-bit glyphs which are folded back to ASCII, so for the smoothest output run
+with
+.Ev LC_ALL Ns = Ns Cm C .
+Available only when compiled with aalib support
+.Pq Cm make Ar AA Ns = Ns Ar 1 .
 .It Fl r
 Calculate counter rate and divide by measured sample interval.
 .It Fl c Ar plotchar
