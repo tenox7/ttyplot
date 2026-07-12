@@ -543,9 +543,10 @@ static void redraw_screen(void) {
 }
 
 static void winch_handler(int signum) {
+    int saved_errno = errno;  // keep errno intact for the interrupted syscall
     (void)signum;
     got_winch = 1;
-    signal(SIGWINCH, winch_handler);  // re-arm (SysV one-shot semantics)
+    errno = saved_errno;
 }
 
 static void finish(int signum) {
@@ -555,6 +556,57 @@ static void finish(int signum) {
     refresh();
     endwin();
     exit(0);
+}
+
+// Store one incoming number. In -2 mode, pair two numbers into one record
+// (pairing may span line boundaries). Returns 1 when a full record was stored.
+static int handle_value(double value) {
+    static double saved;
+    static int have_saved = 0;
+
+    if (two && ! have_saved) {
+        saved = value;
+        have_saved = 1;
+        return 0;
+    }
+
+    n = (n + 1) % plotwidth;
+    if (two) {
+        values1[n] = saved;
+        values2[n] = value;
+        have_saved = 0;
+    } else {
+        values1[n] = value;
+    }
+    valid[n] = 1;
+    if (v < INT_MAX)
+        v++;
+
+    time(&t1);  // wall clock for the display
+    if (rate)
+        td = derivative(&values1[n], two ? &values2[n] : NULL);
+    return 1;
+}
+
+// Parse every number from one input line and store it. Garbage tokens and
+// non-finite values (NaN, +/-inf) are skipped rather than corrupting the plot.
+// Returns the number of full records stored (used to decide whether to redraw).
+static int handle_line(char *line) {
+    static const char delims[] = " \t\r\n\v\f";
+    char *token, *str = line, *number_end;
+    double value;
+    int records = 0;
+
+    while ((token = strtok(str, delims)) != NULL) {
+        str = NULL;  // keep strtok working on the same string
+        value = strtod(token, &number_end);
+        if (*number_end != '\0')  // token was not a pure number
+            continue;
+        if (value != value || value > DBL_MAX || value < -DBL_MAX)  // NaN / inf
+            continue;
+        records += handle_value(value);
+    }
+    return records;
 }
 
 static void parse_colors(char *arg) {
@@ -582,12 +634,12 @@ static void parse_colors(char *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    int i, r, c;
+    int i, c;
     int input_closed = 0;
     int show_ver = 0, show_usage = 0;
     int cached_opterr;
     const char *optstring = "2rc:e:E:s:S:m:M:t:u:vhC:";
-    double in1 = 0, in2 = 0;
+    char linebuf[4096];
     int any_color;
 
     // plotchar defaults to T_VLINE, but ACS_VLINE is only valid after initscr()
@@ -715,8 +767,18 @@ int main(int argc, char *argv[]) {
     gethw();
     redraw_screen();
 
-    signal(SIGWINCH, winch_handler);
-    signal(SIGINT, finish);
+    // sigaction (POSIX.1, on every target OS) gives reliable semantics: the
+    // handler stays installed (no SysV one-shot re-arm) and, with no SA_RESTART,
+    // a resize interrupts the blocking read instead of being swallowed.
+    {
+        struct sigaction sa;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sa.sa_handler = winch_handler;
+        sigaction(SIGWINCH, &sa, NULL);
+        sa.sa_handler = finish;
+        sigaction(SIGINT, &sa, NULL);
+    }
 
     while (1) {
         // A resize was requested; rebuild curses state and repaint (in the main
@@ -736,12 +798,9 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        if (two)
-            r = scanf("%lf %lf", &in1, &in2);
-        else
-            r = scanf("%lf", &in1);
-
-        if (r == EOF) {
+        // Blocking line read. fgets keeps the portable model (no select/
+        // non-blocking); handle_line() does the robust strtod tokenizing.
+        if (fgets(linebuf, sizeof(linebuf), stdin) == NULL) {
             if (errno == EINTR) {  // interrupted by a signal (likely SIGWINCH)
                 clearerr(stdin);
                 errno = 0;
@@ -752,34 +811,9 @@ int main(int argc, char *argv[]) {
             redraw_screen();
             continue;
         }
-        if (r == 0) {  // non-numeric token: skip to end of line
-            int ch;
-            while ((ch = getchar()) != '\n' && ch != EOF)
-                ;
-            if (ch == EOF) {
-                errstr = "input stream closed";
-                input_closed = 1;
-                redraw_screen();
-            }
-            continue;
-        }
-        if (two && r == 1)  // incomplete record (only first of a pair)
-            continue;
 
-        // Store the new sample in the ring buffer.
-        n = (n + 1) % plotwidth;
-        values1[n] = in1;
-        if (two)
-            values2[n] = in2;
-        valid[n] = 1;
-        if (v < INT_MAX)
-            v++;
-
-        time(&t1);  // wall clock for the display
-        if (rate)
-            td = derivative(&values1[n], two ? &values2[n] : NULL);
-
-        redraw_screen();
+        if (handle_line(linebuf) > 0)  // redraw only when new data was stored
+            redraw_screen();
     }
 
     endwin();
