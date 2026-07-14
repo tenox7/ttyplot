@@ -32,6 +32,14 @@
 #include <err.h>
 #endif
 
+// Experimental, opt-in aalib ASCII-art backend (build with AA=1; needs aalib).
+#ifdef AALIB
+#include <aalib.h>
+#define AA_OPT "Af"
+#else
+#define AA_OPT ""
+#endif
+
 #ifndef VERSION_STR
 #define VERSION_STR "1.4.1"
 #endif
@@ -83,6 +91,10 @@ enum ColorElement {
     NUM_COLOR_ELEMENTS
 };
 
+// aalib's two lines use color pairs just past the enum-mapped pairs (1..N).
+#define PAIR_AA1 (NUM_COLOR_ELEMENTS + 1)
+#define PAIR_AA2 (NUM_COLOR_ELEMENTS + 2)
+
 #define VALUES_MAX 1024
 
 chtype plotchar, max_errchar, min_errchar;
@@ -94,6 +106,7 @@ char title[256] = ".: ttyplot :.", unit[64] = {0}, ls[256] = {0};
 double values1[VALUES_MAX] = {0}, values2[VALUES_MAX] = {0};
 char valid[VALUES_MAX] = {0};  // which columns hold real data (portable NaN-free)
 int width = 0, height = 0, n = -1, v = 0, rate = 0, two = 0;
+int aa = 0, aa_fill = 0;  // aalib mode + fill; aa only settable when built -DAALIB
 int plotwidth = WIDTH_MIN - 4, plotheight = 0;
 int fake_clock = 0;
 char *errstr = NULL;
@@ -132,6 +145,11 @@ static void usage(void) {
         "  -M minimum value, if underrun draws error symbol (see -E), fixes lower scale\n"
         "  -t title of the plot\n"
         "  -u unit displayed beside vertical bar\n");
+#ifdef AALIB
+    printf(
+        "  -A (experimental) aalib ASCII-art line mode, two lines in color\n"
+        "  -f fill the area under the aalib line (line 1)\n");
+#endif
     printf(
         "  -C color[,axes,text,title,max_err,min_err]  set colors 0-7:\n"
         "     black=0 red=1 green=2 yellow=3 blue=4 magenta=5 cyan=6 white=7\n"
@@ -406,6 +424,124 @@ static void plot_values(int ph, int pw, double max, double min, int cur, chtype 
     }
 }
 
+#ifdef AALIB
+// The aa mode renders smooth lines in plain 7-bit ASCII, so it works even on a
+// dumb terminal. In a C/POSIX locale aalib emits its native 7-bit glyph ramp,
+// which we pass through untouched; a UTF-8 locale would instead yield 8-bit
+// CP437 glyphs, which we fold down to a 7-bit approximation by shape. (This
+// legacy build never calls setlocale(), so the C-locale ramp is what runs.)
+static char aa_ascii(unsigned char b) {
+    if (b >= 0x20 && b < 0x7f)  // includes aalib's own 7-bit ramp
+        return (char)b;
+    switch (b) {
+        case 0xDB:  // full / dark block
+        case 0xB2:
+            return '#';
+        case 0xB1:
+            return '+';  // medium shade
+        case 0xB0:
+            return ':';  // light shade
+        case 0xDF:
+            return '"';  // upper half
+        case 0xDC:
+            return '.';  // lower half
+        case 0xDD:
+            return '[';  // left half
+        case 0xDE:
+            return ']';  // right half
+        case 0xCC:       // diagonal quadrants
+        case 0xA5:
+            return 'x';
+    }
+    return b ? '*' : ' ';
+}
+
+// Render up to two series as aalib 7-bit ASCII-art, one pass each so the two
+// lines can be colored independently (line 1 -> PAIR_AA1, line 2 -> PAIR_AA2).
+// Without -f each series is a connected line; with -f, line 1's area is filled.
+// The aalib context is recreated every paint so it tracks resizes for free.
+static void plot_aa(int ph, int pw, double *v1, double *v2, double max, double min,
+                    int cur) {
+    const int first_col = 3;
+    struct aa_hardware_params hp;
+    aa_context *c;
+    int iw, ih, pass, x, r, col;
+    double range;
+
+    if (ph <= 0 || pw <= 0)
+        return;
+
+    range = max - min;
+    if (range <= 0)
+        range = 1;
+
+    hp = aa_defparams;
+    hp.width = pw;
+    hp.height = ph;
+    c = aa_init(&mem_d, &hp, NULL);
+    if (! c)
+        return;
+
+    iw = aa_imgwidth(c);
+    ih = aa_imgheight(c);
+
+    for (pass = 0; pass < 2; pass++) {
+        double *vals = (pass == 0) ? v1 : v2;
+        int do_fill = (pass == 0) ? aa_fill : 0;  // -f fills line 1 only
+        short pair = (pass == 0) ? PAIR_AA1 : PAIR_AA2;
+        int prev_y = 0, prev_valid = 0;
+        unsigned char *text;
+        if (! vals)
+            continue;
+
+        memset(aa_image(c), 0, (size_t)iw * ih);
+
+        for (x = 0; x < iw; x++) {
+            int a = x * pw / iw;            // image column -> data column
+            int dcol = (cur + 1 + a) % pw;  // walk ring buffer oldest -> newest
+            double va, frac;
+            int y, lo, hi, yy;
+            if (! valid[dcol]) {
+                prev_valid = 0;
+                continue;
+            }
+            va = vals[dcol];
+            frac = (va - min) / range;
+            if (frac < 0)
+                frac = 0;
+            if (frac > 1)
+                frac = 1;
+            y = (ih - 1) - iround(frac * (ih - 1));
+
+            lo = y;
+            hi = y;
+            if (do_fill) {
+                hi = ih - 1;
+            } else if (prev_valid) {
+                lo = (prev_y < y) ? prev_y : y;
+                hi = (prev_y < y) ? y : prev_y;
+            }
+            for (yy = lo; yy <= hi; yy++)
+                aa_putpixel(c, x, yy, 255);
+            prev_y = y;
+            prev_valid = 1;
+        }
+
+        aa_render(c, &aa_defrenderparams, 0, 0, pw, ph);
+        text = aa_text(c);
+        for (r = 0; r < ph; r++)
+            for (col = 0; col < pw; col++) {
+                unsigned char b = text[r * pw + col];
+                if (b == 0 || b == ' ')
+                    continue;
+                mvaddch(1 + r, first_col + col, (chtype)aa_ascii(b) | COLOR_PAIR(pair));
+            }
+    }
+
+    aa_close(c);
+}
+#endif
+
 static void show_all_centered(const char *message) {
     const size_t message_len = strlen(message);
     const int x = ((int)message_len > width) ? 0 : (width / 2 - (int)message_len / 2);
@@ -514,8 +650,13 @@ static void paint_plot(void) {
     if (colors[TEXT_COLOR] != -1)
         attroff(COLOR_PAIR(TEXT_COLOR + 1));
 
-    plot_values(plotheight, plotwidth, max, min, cur, plotchar, max_errchar,
-                min_errchar);
+#ifdef AALIB
+    if (aa)
+        plot_aa(plotheight, plotwidth, values1, two ? values2 : NULL, max, min, cur);
+    else
+#endif
+        plot_values(plotheight, plotwidth, max, min, cur, plotchar, max_errchar,
+                    min_errchar);
     draw_axes(height, plotheight, plotwidth, max, min, unit);
 
     if (colors[TITLE_COLOR] != -1)
@@ -638,7 +779,7 @@ int main(int argc, char *argv[]) {
     int input_closed = 0;
     int show_ver = 0, show_usage = 0;
     int cached_opterr;
-    const char *optstring = "2rc:e:E:s:S:m:M:t:u:vhC:";
+    const char *optstring = "2" AA_OPT "rc:e:E:s:S:m:M:t:u:vhC:";
     char linebuf[4096];
     int any_color;
 
@@ -693,6 +834,14 @@ int main(int argc, char *argv[]) {
                 two = 1;
                 plotchar = '|';
                 break;
+#ifdef AALIB
+            case 'A':
+                aa = 1;
+                break;
+            case 'f':
+                aa_fill = 1;
+                break;
+#endif
             case 'c':
                 plotchar = optarg[0];
                 break;
@@ -749,6 +898,8 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < NUM_COLOR_ELEMENTS; i++)
         if (colors[i] != -1)
             any_color = 1;
+    if (aa)
+        any_color = 1;  // aalib needs its two color pairs even without -C
     if (any_color && has_colors()) {
         start_color();
 #ifdef NCURSES_VERSION
@@ -757,6 +908,14 @@ int main(int argc, char *argv[]) {
         for (i = 0; i < NUM_COLOR_ELEMENTS; i++)
             if (colors[i] != -1)
                 init_pair(i + 1, colors[i], TP_DEFAULT_BG);
+        if (aa) {
+            int aa1 = (colors[LINE_COLOR] != -1) ? colors[LINE_COLOR] : C_GREEN;
+            int aa2 = (line2color != -1)  ? line2color
+                      : (aa1 == C_BLUE) ? C_GREEN
+                                        : C_BLUE;
+            init_pair(PAIR_AA1, aa1, TP_DEFAULT_BG);
+            init_pair(PAIR_AA2, aa2, TP_DEFAULT_BG);
+        }
     }
 
     time(&t1);

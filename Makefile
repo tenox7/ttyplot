@@ -9,6 +9,14 @@ CPPFLAGS  += -DVERSION_STR='"$(VERSION)"'
 CURSES    ?= -lcurses
 LDLIBS    += $(CURSES)
 
+# Experimental, opt-in aalib ASCII-art backend (the -A / -f flags). Off by
+# default; build with `make AA=1` (needs aalib and its aalib-config helper).
+# Written without GNU-only `ifdef`, so this also parses under BSD make (bmake).
+AALIB_CPPFLAGS_1 = -DAALIB `aalib-config --cflags`
+AALIB_LDLIBS_1   = `aalib-config --libs`
+CPPFLAGS += $(AALIB_CPPFLAGS_$(AA))
+LDLIBS   += $(AALIB_LDLIBS_$(AA))
+
 # Portability knobs for old systems -- add to CPPFLAGS as needed:
 #   -DNOACS        terminal lacks ACS_* line-drawing chars (use ASCII - | L)
 #   -DNOGETMAXYX   curses lacks getmaxyx() (fall back to LINES/COLS)
