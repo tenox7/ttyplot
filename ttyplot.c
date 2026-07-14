@@ -607,16 +607,24 @@ static char aa_ascii(unsigned char b) {
     if (b >= 0x20 && b < 0x7f)  // includes aalib's own 7-bit ramp
         return (char)b;
     switch (b) {
-        case 0xDB:              // full block
-        case 0xB2: return '#';  // dark shade
-        case 0xB1: return '+';  // medium shade
-        case 0xB0: return ':';  // light shade
-        case 0xDF: return '"';  // upper half
-        case 0xDC: return '.';  // lower half
-        case 0xDD: return '[';  // left half
-        case 0xDE: return ']';  // right half
-        case 0xCC:              // diagonal quadrants
-        case 0xA5: return 'x';
+        case 0xDB:  // full block
+        case 0xB2:
+            return '#';  // dark shade
+        case 0xB1:
+            return '+';  // medium shade
+        case 0xB0:
+            return ':';  // light shade
+        case 0xDF:
+            return '"';  // upper half
+        case 0xDC:
+            return '.';  // lower half
+        case 0xDD:
+            return '[';  // left half
+        case 0xDE:
+            return ']';  // right half
+        case 0xCC:       // diagonal quadrants
+        case 0xA5:
+            return 'x';
     }
     return b ? '*' : ' ';
 }
@@ -689,8 +697,7 @@ static void plot_aa(int ph, int pw, double *v1, double *v2, double max, double m
                 unsigned char b = text[r * pw + col];
                 if (b == 0 || b == ' ')
                     continue;
-                mvaddch(1 + r, first_col + col,
-                        (chtype)aa_ascii(b) | COLOR_PAIR(pair));
+                mvaddch(1 + r, first_col + col, (chtype)aa_ascii(b) | COLOR_PAIR(pair));
             }
     }
 

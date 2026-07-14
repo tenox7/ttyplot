@@ -53,10 +53,10 @@ static double metric_sample(double *level, double *spike) {
     double noise = ((double)rand() / RAND_MAX) * 2.0 - 1.0;  // -1..1
     *level += theta * (target - *level) + sigma * noise;
     *spike *= decay;
-    if (rand() < RAND_MAX / 100)               // ~1% chance of a new spike
-        *spike += 30.0 + (rand() % 50);        // magnitude 30..79
+    if (rand() < RAND_MAX / 100)         // ~1% chance of a new spike
+        *spike += 30.0 + (rand() % 50);  // magnitude 30..79
     double value = *level + *spike;
-    return value < 0 ? 0 : value;              // load is never negative
+    return value < 0 ? 0 : value;  // load is never negative
 }
 
 int main(int argc, char *argv[]) {
@@ -115,8 +115,8 @@ int main(int argc, char *argv[]) {
     const useconds_t delay = 1e6 / rate;
     srand(seed);
 
-    double level1 = 20.0, spike1 = 0.0;  // metrics state, series 1
-    double level2 = 20.0, spike2 = 0.0;  // metrics state, series 2
+    double level1 = 20.0, spike1 = 0.0;                  // metrics state, series 1
+    double level2 = 20.0, spike2 = 0.0;                  // metrics state, series 2
     const double rmin = output_negative ? -100.0 : 0.0;  // -R range
     const double rmax = 100.0;
 
