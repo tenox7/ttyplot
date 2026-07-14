@@ -9,10 +9,11 @@ LDLIBS += `pkg-config --libs ncursesw` -lm
 
 # Experimental, opt-in ASCII-art rendering backend (aalib). Off by default;
 # build with `make AA=1` (requires aalib and its aalib-config helper).
-ifdef AA
-CPPFLAGS += -DAALIB `aalib-config --cflags`
-LDLIBS   += `aalib-config --libs`
-endif
+# Written without GNU-only `ifdef` so this file also parses under BSD make (bmake).
+AALIB_CPPFLAGS_1 = -DAALIB `aalib-config --cflags`
+AALIB_LDLIBS_1   = `aalib-config --libs`
+CPPFLAGS += $(AALIB_CPPFLAGS_$(AA))
+LDLIBS   += $(AALIB_LDLIBS_$(AA))
 
 all: ttyplot stresstest
 
