@@ -226,6 +226,15 @@ sar -r 1 \\
  | ttyplot -s 100 -t "memory used %" -u "%"
 .Ed
 .Pp
+Note: the column index
+.Pq Li @F Ns Op 5
+may vary between sysstat versions.
+Run
+.Nm sar Fl r Ar 1
+and count the column containing
+.Li %memused
+(starting from 0) to find the correct index for your system.
+.Pp
 Number of processes in running and io blocked state:
 .Bd -literal -offset indent
 vmstat -n 1 \\
