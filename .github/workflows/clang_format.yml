@@ -17,7 +17,7 @@ permissions:
 jobs:
   clang-format:
     name: Enforce clang-format
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     env:
       CLANG_MAJOR_VERSION: 17
     steps:
