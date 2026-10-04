@@ -26,46 +26,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - cc: gcc-14
+          - cc: gcc-11
             clang_major_version: null
-            clang_repo_suffix: null
             make: make
+            runs-on: ubuntu-22.04
+          - cc: musl-gcc  # based on gcc-13
+            clang_major_version: null
+            make: bmake
             runs-on: ubuntu-24.04
+          - cc: clang-22
+            clang_major_version: 22
+            make: bmake
+            runs-on: ubuntu-26.04
+            experimental: true  # preview OS (see continue-on-error above)
           - cc: clang-18
             clang_major_version: 18
-            clang_repo_suffix: -18
-            make: bmake
-            runs-on: ubuntu-22.04
-          - cc: musl-gcc
-            clang_major_version: null
-            clang_repo_suffix: null
-            make: bmake
-            runs-on: ubuntu-22.04
-          - cc: gcc-13
-            clang_major_version: null
-            clang_repo_suffix: null
             make: make
-            runs-on: macos-14
+            runs-on: macos-15
           - cc: gcc-15
             clang_major_version: null
-            clang_repo_suffix: null
             make: bmake
-            runs-on: macos-15-intel
+            runs-on: macos-26-intel
           - cc: clang-20
             clang_major_version: 20
-            clang_repo_suffix: null
             make: bsdmake
-            runs-on: macos-26
-            experimental: true  # preview OS; UI test renders blank (see continue-on-error above)
+            runs-on: xcode-27
+            experimental: true  # preview OS (see continue-on-error above)
     steps:
-      - name: Add Clang/LLVM repositories
-        if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
-        run: |-
-          set -x
-          source /etc/os-release
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}${{ matrix.clang_repo_suffix }} main"
-
       - name: Install build dependencies
         if: "${{ runner.os == 'Linux' }}"
         run: |-
@@ -83,13 +70,6 @@ jobs:
             bmake \
             bsdmake \
             coreutils
-
-      - name: Install build dependency Clang ${{ matrix.clang_major_version }}
-        if: "${{ runner.os == 'Linux' && contains(matrix.cc, 'clang') }}"
-        run: |-
-          sudo apt-get install --yes --no-install-recommends -V \
-              clang-${{ matrix.clang_major_version }} \
-              libclang-rt-${{ matrix.clang_major_version }}-dev
 
       - name: Add versioned aliases for Clang ${{ matrix.clang_major_version }}
         if: "${{ runner.os == 'macOS' && contains(matrix.cc, 'clang') }}"
@@ -157,7 +137,7 @@ jobs:
           fi
 
           # musl-gcc and compilers on macOS do not seem to support linking with sanitizers
-          if [[ ${{ matrix.cc }} =~ musl || ${{ matrix.runs-on }} =~ macos ]]; then
+          if [[ ${{ matrix.cc }} =~ musl || ${{ matrix.runs-on }} =~ macos|xcode ]]; then
             sanitizer=
           else
             # ASan: https://clang.llvm.org/docs/AddressSanitizer.html

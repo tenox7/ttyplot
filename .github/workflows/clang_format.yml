@@ -17,18 +17,11 @@ permissions:
 jobs:
   clang-format:
     name: Enforce clang-format
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     env:
-      CLANG_MAJOR_VERSION: 17
+      CLANG_MAJOR_VERSION: 20
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
-
-      - name: Add Clang/LLVM repositories
-        run: |-
-          set -x
-          source /etc/os-release
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_MAJOR_VERSION} main"
 
       - name: Install clang-format
         run: |-
